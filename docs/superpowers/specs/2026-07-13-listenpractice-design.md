@@ -76,10 +76,25 @@ Single key `listenpractice:v1`:
 - Saving is write-through: every mutation persists immediately.
 - Corrupt/missing JSON → start with defaults.
 
+## Transcript display (added 2026-07-14)
+
+- `server.py` (Python stdlib + `youtube-transcript-api`) replaces the plain
+  static server: it serves the site and `GET /transcript?v=VIDEO_ID`, returning
+  `{available, language, generated, snippets: [{start, duration, text}]}` or
+  `{available: false, reason}`. Manual caption tracks are preferred over
+  auto-generated; results are cached in memory per video.
+- The page fetches the transcript on video load (and on startup for the
+  restored video), keeps it in memory only, and renders each timestamp as
+  time + the snippet whose `start` is closest at-or-before the mark
+  (`findSnippet` in `helpers.js`). No transcript → plain times; the site
+  still works under a dumb static server.
+
 ## Files
 
 - `index.html` — page structure, loads the IFrame API script.
-- `helpers.js` — pure functions (`parseYouTubeUrl`, `formatTime`), node-testable.
+- `server.py` — static file server + `/transcript` endpoint.
+- `helpers.js` — pure functions (`parseYouTubeUrl`, `formatTime`, `findSnippet`),
+  node-testable.
 - `store.js` — localStorage-backed state (storage injected), node-testable.
 - `app.js` — DOM + player wiring.
 - `style.css` — layout and styling.

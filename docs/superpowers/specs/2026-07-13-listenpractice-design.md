@@ -79,8 +79,9 @@ Single key `listenpractice:v1`:
 ## Files
 
 - `index.html` — page structure, loads the IFrame API script.
-- `app.js` — all logic. Pure helpers (`parseYouTubeUrl`, `formatTime`) kept as plain
-  functions at the top so they are testable in isolation.
+- `helpers.js` — pure functions (`parseYouTubeUrl`, `formatTime`), node-testable.
+- `store.js` — localStorage-backed state (storage injected), node-testable.
+- `app.js` — DOM + player wiring.
 - `style.css` — layout and styling.
 
 Run with any static file server (e.g., `python3 -m http.server`); the IFrame API

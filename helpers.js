@@ -33,6 +33,18 @@ function formatTime(seconds) {
   return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
 }
 
+// Last snippet whose start is at or before `seconds` (snippets sorted by start),
+// so gaps between lines resolve to the line just spoken. Null if none/no transcript.
+function findSnippet(snippets, seconds) {
+  if (!Array.isArray(snippets)) return null;
+  let found = null;
+  for (const s of snippets) {
+    if (s.start > seconds) break;
+    found = s;
+  }
+  return found;
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { parseYouTubeUrl, formatTime };
+  module.exports = { parseYouTubeUrl, formatTime, findSnippet };
 }

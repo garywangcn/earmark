@@ -17,6 +17,7 @@ const els = {
 let player = null;
 let playerReady = false;
 let currentVideoId = store.state.lastVideoId;
+let transcript = null; // snippets for currentVideoId, fetched from server.py; null if unavailable
 
 els.offsetInput.value = store.state.settings.rewindSeconds;
 
@@ -38,7 +39,18 @@ function renderList() {
     const li = document.createElement("li");
     const jump = document.createElement("button");
     jump.className = "jump";
-    jump.textContent = formatTime(t);
+    const time = document.createElement("span");
+    time.className = "time";
+    time.textContent = formatTime(t);
+    jump.appendChild(time);
+    const snippet = findSnippet(transcript, t);
+    if (snippet) {
+      const text = document.createElement("span");
+      text.className = "snippet";
+      text.textContent = snippet.text.replace(/\s+/g, " ");
+      jump.appendChild(text);
+      jump.title = snippet.text;
+    }
     jump.addEventListener("click", () => {
       if (!playerReady) return;
       player.seekTo(Math.max(0, t - store.state.settings.rewindSeconds), true);
@@ -70,12 +82,26 @@ function fetchTitle(videoId) {
     .catch(() => {});
 }
 
+function fetchTranscript(videoId) {
+  transcript = null;
+  fetch(`/transcript?v=${videoId}`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      if (data && data.available && videoId === currentVideoId) {
+        transcript = data.snippets;
+        renderList();
+      }
+    })
+    .catch(() => {});
+}
+
 function loadVideo(videoId) {
   currentVideoId = videoId;
   store.setLastVideo(videoId);
   showError("");
   if (playerReady) player.cueVideoById(videoId);
   fetchTitle(videoId);
+  fetchTranscript(videoId);
   renderList();
 }
 
@@ -147,4 +173,5 @@ window.onYouTubeIframeAPIReady = function () {
   });
 };
 
+if (currentVideoId) fetchTranscript(currentVideoId);
 renderList();

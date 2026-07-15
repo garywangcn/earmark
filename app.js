@@ -6,9 +6,7 @@ const els = {
   form: document.getElementById("load-form"),
   urlInput: document.getElementById("url-input"),
   error: document.getElementById("error"),
-  title: document.getElementById("video-title"),
-  foldToggle: document.getElementById("fold-toggle"),
-  list: document.getElementById("timestamp-list"),
+  groups: document.getElementById("video-groups"),
   emptyHint: document.getElementById("empty-hint"),
   markBtn: document.getElementById("mark-btn"),
   offsetInput: document.getElementById("offset-input"),
@@ -17,7 +15,7 @@ const els = {
 let player = null;
 let playerReady = false;
 let currentVideoId = store.state.lastVideoId;
-let transcript = null; // snippets for currentVideoId, fetched from server.py; null if unavailable
+const transcripts = {}; // videoId -> snippets, fetched from server.py
 
 els.offsetInput.value = store.state.settings.rewindSeconds;
 
@@ -26,16 +24,26 @@ function showError(msg) {
   els.error.hidden = !msg;
 }
 
-function renderList() {
-  const video = currentVideoId ? store.getVideo(currentVideoId) : null;
-  els.title.textContent = video ? video.title : "No video loaded";
-  const folded = video ? video.folded : false;
-  els.foldToggle.textContent = folded ? "▸" : "▾";
-  els.list.hidden = folded;
-  els.list.innerHTML = "";
-  const timestamps = video ? video.timestamps : [];
-  els.emptyHint.hidden = folded || timestamps.length > 0;
-  for (const t of timestamps) {
+function jumpTo(videoId, t) {
+  const target = Math.max(0, t - store.state.settings.rewindSeconds);
+  if (videoId === currentVideoId) {
+    if (!playerReady) return;
+    player.seekTo(target, true);
+    player.playVideo();
+  } else {
+    currentVideoId = videoId;
+    store.setLastVideo(videoId);
+    showError("");
+    fetchTranscript(videoId);
+    if (playerReady) player.loadVideoById(videoId, target);
+    renderList();
+  }
+}
+
+function renderTimestamps(videoId, video) {
+  const ul = document.createElement("ul");
+  ul.className = "timestamps";
+  for (const t of video.timestamps) {
     const li = document.createElement("li");
     const jump = document.createElement("button");
     jump.className = "jump";
@@ -43,7 +51,7 @@ function renderList() {
     time.className = "time";
     time.textContent = formatTime(t);
     jump.appendChild(time);
-    const snippet = findSnippet(transcript, t);
+    const snippet = findSnippet(transcripts[videoId], t);
     if (snippet) {
       const text = document.createElement("span");
       text.className = "snippet";
@@ -51,21 +59,51 @@ function renderList() {
       jump.appendChild(text);
       jump.title = snippet.text;
     }
-    jump.addEventListener("click", () => {
-      if (!playerReady) return;
-      player.seekTo(Math.max(0, t - store.state.settings.rewindSeconds), true);
-      player.playVideo();
-    });
+    jump.addEventListener("click", () => jumpTo(videoId, t));
     const del = document.createElement("button");
     del.className = "delete";
     del.textContent = "×";
     del.title = "Delete this timestamp";
     del.addEventListener("click", () => {
-      store.deleteTimestamp(currentVideoId, t);
+      store.deleteTimestamp(videoId, t);
       renderList();
     });
     li.append(jump, del);
-    els.list.appendChild(li);
+    ul.appendChild(li);
+  }
+  return ul;
+}
+
+function renderList() {
+  els.groups.innerHTML = "";
+  const videos = Object.entries(store.state.videos).sort((a, b) =>
+    (b[1].updatedAt || "").localeCompare(a[1].updatedAt || "")
+  );
+  els.emptyHint.hidden = videos.length > 0;
+  for (const [videoId, video] of videos) {
+    const section = document.createElement("section");
+    section.className = "video-group" + (videoId === currentVideoId ? " current" : "");
+    const header = document.createElement("div");
+    header.className = "group-header";
+    const fold = document.createElement("button");
+    fold.className = "fold";
+    fold.textContent = video.folded ? "▸" : "▾";
+    fold.title = "Fold/unfold list";
+    fold.addEventListener("click", () => {
+      store.setFolded(videoId, !video.folded);
+      renderList();
+    });
+    const title = document.createElement("button");
+    title.className = "group-title";
+    title.textContent = video.title;
+    title.title = video.title;
+    title.addEventListener("click", () => {
+      if (videoId !== currentVideoId) loadVideo(videoId);
+    });
+    header.append(fold, title);
+    section.appendChild(header);
+    if (!video.folded) section.appendChild(renderTimestamps(videoId, video));
+    els.groups.appendChild(section);
   }
 }
 
@@ -76,19 +114,19 @@ function fetchTitle(videoId) {
     .then((data) => {
       if (data && data.title) {
         store.setTitle(videoId, data.title);
-        if (videoId === currentVideoId) renderList();
+        renderList();
       }
     })
     .catch(() => {});
 }
 
 function fetchTranscript(videoId) {
-  transcript = null;
+  if (transcripts[videoId]) return;
   fetch(`/transcript?v=${videoId}`)
     .then((r) => (r.ok ? r.json() : null))
     .then((data) => {
-      if (data && data.available && videoId === currentVideoId) {
-        transcript = data.snippets;
+      if (data && data.available) {
+        transcripts[videoId] = data.snippets;
         renderList();
       }
     })
@@ -134,12 +172,6 @@ els.markBtn.addEventListener("click", () => {
   els.markBtn.blur();
 });
 
-els.foldToggle.addEventListener("click", () => {
-  if (!currentVideoId) return;
-  store.setFolded(currentVideoId, !store.getVideo(currentVideoId).folded);
-  renderList();
-});
-
 els.offsetInput.addEventListener("change", () => {
   const n = Math.max(0, Number(els.offsetInput.value) || 0);
   els.offsetInput.value = n;
@@ -173,5 +205,7 @@ window.onYouTubeIframeAPIReady = function () {
   });
 };
 
-if (currentVideoId) fetchTranscript(currentVideoId);
+for (const [videoId, video] of Object.entries(store.state.videos)) {
+  if (videoId === currentVideoId || video.timestamps.length > 0) fetchTranscript(videoId);
+}
 renderList();

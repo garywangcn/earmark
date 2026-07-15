@@ -49,6 +49,11 @@ def get_transcript(video_id):
 
 
 class Handler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        # Always revalidate so code changes take effect on plain reload.
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
     def do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path != "/transcript":

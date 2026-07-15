@@ -9,8 +9,11 @@ bookmark to jump back to that moment minus a configurable rewind offset.
 ## Decisions (from brainstorming)
 
 - **Storage:** browser localStorage only. No backend, no accounts.
-- **Sidebar:** shows only the current video's timestamp list (foldable). Per-video
-  data persists, so reloading a previously used URL restores its list.
+- **Sidebar (revised 2026-07-15):** lists every video ever watched/marked, newest
+  first, each as a foldable group. The current video is highlighted. Clicking a
+  group title loads (cues) that video; clicking a timestamp of another video
+  loads it and starts playing at `t − offset`. Subtitle snippets are shown up to
+  two lines (line-clamp), full text on hover.
 - **SPACE behavior:** records the timestamp silently; playback continues.
 - **Stack:** vanilla HTML/JS/CSS, no dependencies, no build step.
 

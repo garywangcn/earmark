@@ -21,12 +21,14 @@ app just shows plain times.
 2. While listening, press **SPACE** (or click **⏺ Mark**) to record the current time.
 3. Click a timestamp in the left list to jump back to it minus the **rewind
    offset** (configurable, default 3 s). Click **×** to delete an entry.
-4. The ▾ button folds/unfolds the list. Each video keeps its own list, stored
-   in your browser's localStorage — reloading a video's URL restores it.
+4. The left sidebar lists every video you've watched or marked (newest first).
+   Click a video's title to load it; click one of its timestamps to load the
+   video and jump straight there. The ▾ button folds/unfolds each video's
+   list. Everything is stored in your browser's localStorage.
 
 Subtitle lines come from the video's captions (manual track preferred, else
-auto-generated). Hover an entry to see the full line. Videos without captions
-show plain times.
+auto-generated), shown up to two lines — hover an entry to see the full line.
+Videos without captions show plain times.
 
 Note: if you clicked inside the video itself, YouTube owns the keyboard for a
 moment and SPACE toggles play/pause; the app reclaims focus on the next

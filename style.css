@@ -81,7 +81,7 @@ body {
 
 #empty-hint { color: #888; font-size: 13px; }
 
-#sidebar-actions { display: flex; gap: 8px; margin-top: 12px; }
+#sidebar-actions { display: flex; gap: 8px; margin-bottom: 12px; }
 #sidebar-actions button {
   flex: 1;
   padding: 6px 10px;

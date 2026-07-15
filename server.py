@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ListenPractice server: serves the site and a /transcript?v=VIDEO_ID endpoint.
+"""EarMark server: serves the site and a /transcript?v=VIDEO_ID endpoint.
 
 Usage: python3 server.py [port]   (default port 8787)
 Requires: pip install youtube-transcript-api
@@ -77,7 +77,7 @@ def main():
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8787
     handler = partial(Handler, directory=str(Path(__file__).parent))
     server = ThreadingHTTPServer(("", port), handler)
-    print(f"ListenPractice on http://localhost:{port}")
+    print(f"EarMark on http://localhost:{port}")
     server.serve_forever()
 
 

@@ -192,7 +192,7 @@ els.offsetInput.addEventListener("change", () => {
 
 els.exportBtn.addEventListener("click", () => {
   const payload = {
-    app: "listenpractice",
+    app: "earmark",
     version: 1,
     exportedAt: new Date().toISOString(),
     videos: store.state.videos,
@@ -200,7 +200,7 @@ els.exportBtn.addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `listenpractice-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `earmark-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
 });
@@ -214,7 +214,7 @@ function importData(text) {
     return;
   }
   if (!data || typeof data !== "object" || !data.videos || typeof data.videos !== "object") {
-    showError("Import failed: not a ListenPractice export file.");
+    showError("Import failed: not an EarMark export file.");
     return;
   }
   store.mergeVideos(data.videos);

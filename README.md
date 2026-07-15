@@ -1,4 +1,4 @@
-# ListenPractice
+# EarMark
 
 Practice listening with YouTube videos: bookmark moments with SPACE, click a
 bookmark to replay from a few seconds before it. When a video has subtitles,

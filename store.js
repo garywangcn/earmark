@@ -61,6 +61,29 @@ function createStore(storage) {
       video.timestamps = video.timestamps.filter((t) => t !== seconds);
       save();
     },
+    // Merge an exported `videos` map into this store: new videos are added,
+    // timestamps are unioned (0.5s near-duplicate guard), local titles win.
+    mergeVideos(videos) {
+      if (!videos || typeof videos !== "object") return;
+      for (const [videoId, incoming] of Object.entries(videos)) {
+        if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) continue;
+        if (!incoming || !Array.isArray(incoming.timestamps)) continue;
+        const isNew = !state.videos[videoId];
+        const video = ensureVideo(videoId);
+        if (isNew && typeof incoming.title === "string") video.title = incoming.title;
+        if (isNew && typeof incoming.folded === "boolean") video.folded = incoming.folded;
+        for (const t of incoming.timestamps) {
+          if (typeof t !== "number" || !Number.isFinite(t) || t < 0) continue;
+          if (video.timestamps.some((e) => Math.abs(e - t) < 0.5)) continue;
+          video.timestamps.push(t);
+        }
+        video.timestamps.sort((a, b) => a - b);
+        if (typeof incoming.updatedAt === "string" && incoming.updatedAt > video.updatedAt) {
+          video.updatedAt = incoming.updatedAt;
+        }
+      }
+      save();
+    },
     deleteVideo(videoId) {
       delete state.videos[videoId];
       if (state.lastVideoId === videoId) state.lastVideoId = null;

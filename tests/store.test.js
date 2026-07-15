@@ -87,6 +87,43 @@ test("deleteVideo keeps lastVideoId for other videos", () => {
   assert.strictEqual(store.state.lastVideoId, "vid00000002");
 });
 
+test("mergeVideos adds new videos and unions timestamps without near-duplicates", () => {
+  const store = createStore(fakeStorage());
+  store.addTimestamp("vid00000001", 10);
+  store.mergeVideos({
+    vid00000001: { title: "A", timestamps: [10.2, 30], folded: false, updatedAt: "2026-01-01T00:00:00Z" },
+    vid00000002: { title: "B", timestamps: [5], folded: true, updatedAt: "2026-01-02T00:00:00Z" },
+  });
+  assert.deepStrictEqual(store.getVideo("vid00000001").timestamps, [10, 30]);
+  assert.deepStrictEqual(store.getVideo("vid00000002").timestamps, [5]);
+  assert.strictEqual(store.getVideo("vid00000002").title, "B");
+  assert.strictEqual(store.getVideo("vid00000002").folded, true);
+});
+
+test("mergeVideos keeps the local title and skips invalid entries", () => {
+  const store = createStore(fakeStorage());
+  store.setTitle("vid00000001", "Local title");
+  store.mergeVideos({
+    vid00000001: { title: "Remote title", timestamps: [7, "bad", -3] },
+    "bad id": { title: "x", timestamps: [1] },
+    vid00000003: { title: "x", timestamps: "nope" },
+  });
+  assert.strictEqual(store.getVideo("vid00000001").title, "Local title");
+  assert.deepStrictEqual(store.getVideo("vid00000001").timestamps, [7]);
+  assert.strictEqual(store.getVideo("bad id"), null);
+  assert.strictEqual(store.getVideo("vid00000003"), null);
+});
+
+test("mergeVideos persists and tolerates junk input", () => {
+  const storage = fakeStorage();
+  const store = createStore(storage);
+  store.mergeVideos(null);
+  store.mergeVideos("junk");
+  store.mergeVideos({ vid00000009: { timestamps: [1.5] } });
+  const reloaded = createStore(storage);
+  assert.deepStrictEqual(reloaded.getVideo("vid00000009").timestamps, [1.5]);
+});
+
 test("setTitle, setFolded, setRewindSeconds persist", () => {
   const storage = fakeStorage();
   const store = createStore(storage);

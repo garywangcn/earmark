@@ -10,6 +10,9 @@ const els = {
   emptyHint: document.getElementById("empty-hint"),
   markBtn: document.getElementById("mark-btn"),
   offsetInput: document.getElementById("offset-input"),
+  exportBtn: document.getElementById("export-btn"),
+  importBtn: document.getElementById("import-btn"),
+  importFile: document.getElementById("import-file"),
 };
 
 let player = null;
@@ -185,6 +188,49 @@ els.offsetInput.addEventListener("change", () => {
   els.offsetInput.value = n;
   store.setRewindSeconds(n);
   els.offsetInput.blur();
+});
+
+els.exportBtn.addEventListener("click", () => {
+  const payload = {
+    app: "listenpractice",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    videos: store.state.videos,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `listenpractice-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+function importData(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    showError("Import failed: that file isn't valid JSON.");
+    return;
+  }
+  if (!data || typeof data !== "object" || !data.videos || typeof data.videos !== "object") {
+    showError("Import failed: not a ListenPractice export file.");
+    return;
+  }
+  store.mergeVideos(data.videos);
+  showError("");
+  for (const [videoId, video] of Object.entries(store.state.videos)) {
+    if (video.timestamps.length > 0) fetchTranscript(videoId);
+  }
+  renderList();
+}
+
+els.importBtn.addEventListener("click", () => els.importFile.click());
+els.importFile.addEventListener("change", () => {
+  const file = els.importFile.files[0];
+  if (!file) return;
+  file.text().then(importData);
+  els.importFile.value = "";
 });
 
 window.onYouTubeIframeAPIReady = function () {

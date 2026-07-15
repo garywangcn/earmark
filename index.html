@@ -10,6 +10,11 @@
   <aside id="sidebar">
     <div id="video-groups"></div>
     <p id="empty-hint">Load a video, then press SPACE while it plays to mark a moment.</p>
+    <div id="sidebar-actions">
+      <button id="export-btn" type="button" title="Download all lists as a JSON file">Export</button>
+      <button id="import-btn" type="button" title="Merge lists from an exported JSON file">Import</button>
+      <input id="import-file" type="file" accept=".json,application/json" hidden />
+    </div>
   </aside>
   <main>
     <form id="load-form">

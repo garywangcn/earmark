@@ -26,6 +26,9 @@ app just shows plain times.
    video and jump straight there. The ▾ button folds/unfolds each video's
    list; the × next to a title removes the video and all its timestamps.
    Everything is stored in your browser's localStorage.
+5. **Export** downloads all lists as a JSON file; **Import** merges such a
+   file back in (new videos are added, timestamps are combined without
+   duplicates — useful for backup or moving to another browser).
 
 Subtitle lines come from the video's captions (manual track preferred, else
 auto-generated), shown up to two lines — hover an entry to see the full line.

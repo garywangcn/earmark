@@ -16,6 +16,11 @@ bookmark to jump back to that moment minus a configurable rewind offset.
   two lines (line-clamp), full text on hover. Each group header has a × that
   deletes the video and its timestamps (`store.deleteVideo`; clears
   `lastVideoId` if it pointed there).
+- **Export/Import (added 2026-07-15):** Export downloads
+  `{app, version, exportedAt, videos}` as JSON; Import merges a file back via
+  `store.mergeVideos` — new videos added, timestamps unioned with the 0.5s
+  near-duplicate guard, local titles win, invalid entries skipped. Settings and
+  `lastVideoId` are not imported.
 - **SPACE behavior:** records the timestamp silently; playback continues.
 - **Stack:** vanilla HTML/JS/CSS, no dependencies, no build step.
 

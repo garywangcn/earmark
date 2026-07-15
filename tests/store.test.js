@@ -60,6 +60,33 @@ test("setLastVideo creates the record and persists", () => {
   assert.strictEqual(reloaded.state.lastVideoId, "vid00000001");
 });
 
+test("deleteVideo removes the record and persists", () => {
+  const storage = fakeStorage();
+  const store = createStore(storage);
+  store.addTimestamp("vid00000001", 10);
+  store.addTimestamp("vid00000002", 20);
+  store.deleteVideo("vid00000001");
+  assert.strictEqual(store.getVideo("vid00000001"), null);
+  assert.ok(store.getVideo("vid00000002"));
+  const reloaded = createStore(storage);
+  assert.strictEqual(reloaded.getVideo("vid00000001"), null);
+});
+
+test("deleteVideo clears lastVideoId when it pointed at the deleted video", () => {
+  const store = createStore(fakeStorage());
+  store.setLastVideo("vid00000001");
+  store.deleteVideo("vid00000001");
+  assert.strictEqual(store.state.lastVideoId, null);
+});
+
+test("deleteVideo keeps lastVideoId for other videos", () => {
+  const store = createStore(fakeStorage());
+  store.setLastVideo("vid00000002");
+  store.addTimestamp("vid00000001", 10);
+  store.deleteVideo("vid00000001");
+  assert.strictEqual(store.state.lastVideoId, "vid00000002");
+});
+
 test("setTitle, setFolded, setRewindSeconds persist", () => {
   const storage = fakeStorage();
   const store = createStore(storage);

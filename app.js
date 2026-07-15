@@ -100,7 +100,15 @@ function renderList() {
     title.addEventListener("click", () => {
       if (videoId !== currentVideoId) loadVideo(videoId);
     });
-    header.append(fold, title);
+    const delVideo = document.createElement("button");
+    delVideo.className = "delete";
+    delVideo.textContent = "×";
+    delVideo.title = "Remove this video and its timestamps";
+    delVideo.addEventListener("click", () => {
+      store.deleteVideo(videoId);
+      renderList();
+    });
+    header.append(fold, title, delVideo);
     section.appendChild(header);
     if (!video.folded) section.appendChild(renderTimestamps(videoId, video));
     els.groups.appendChild(section);

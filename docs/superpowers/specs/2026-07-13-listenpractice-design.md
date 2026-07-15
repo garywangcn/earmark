@@ -13,7 +13,9 @@ bookmark to jump back to that moment minus a configurable rewind offset.
   first, each as a foldable group. The current video is highlighted. Clicking a
   group title loads (cues) that video; clicking a timestamp of another video
   loads it and starts playing at `t − offset`. Subtitle snippets are shown up to
-  two lines (line-clamp), full text on hover.
+  two lines (line-clamp), full text on hover. Each group header has a × that
+  deletes the video and its timestamps (`store.deleteVideo`; clears
+  `lastVideoId` if it pointed there).
 - **SPACE behavior:** records the timestamp silently; playback continues.
 - **Stack:** vanilla HTML/JS/CSS, no dependencies, no build step.
 

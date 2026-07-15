@@ -24,7 +24,8 @@ app just shows plain times.
 4. The left sidebar lists every video you've watched or marked (newest first).
    Click a video's title to load it; click one of its timestamps to load the
    video and jump straight there. The ▾ button folds/unfolds each video's
-   list. Everything is stored in your browser's localStorage.
+   list; the × next to a title removes the video and all its timestamps.
+   Everything is stored in your browser's localStorage.
 
 Subtitle lines come from the video's captions (manual track preferred, else
 auto-generated), shown up to two lines — hover an entry to see the full line.

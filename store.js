@@ -61,6 +61,11 @@ function createStore(storage) {
       video.timestamps = video.timestamps.filter((t) => t !== seconds);
       save();
     },
+    deleteVideo(videoId) {
+      delete state.videos[videoId];
+      if (state.lastVideoId === videoId) state.lastVideoId = null;
+      save();
+    },
     setFolded(videoId, folded) {
       ensureVideo(videoId).folded = folded;
       save();

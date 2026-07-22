@@ -62,7 +62,11 @@ function renderTimestamps(videoId, video) {
       jump.appendChild(text);
       jump.title = snippet.text;
     }
-    jump.addEventListener("click", () => jumpTo(videoId, t));
+    jump.addEventListener("click", () => {
+      // A click that ends a text selection shouldn't seek.
+      if (window.getSelection().toString()) return;
+      jumpTo(videoId, t);
+    });
     const del = document.createElement("button");
     del.className = "delete";
     del.textContent = "×";
@@ -101,6 +105,7 @@ function renderList() {
     title.textContent = video.title;
     title.title = video.title;
     title.addEventListener("click", () => {
+      if (window.getSelection().toString()) return;
       if (videoId !== currentVideoId) loadVideo(videoId);
     });
     const delVideo = document.createElement("button");

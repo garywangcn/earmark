@@ -95,9 +95,10 @@ Single key `listenpractice:v1`:
   auto-generated; results are cached in memory per video.
 - The page fetches the transcript on video load (and on startup for the
   restored video), keeps it in memory only, and renders each timestamp as
-  time + the snippet whose `start` is closest at-or-before the mark
-  (`findSnippet` in `helpers.js`). No transcript → plain times; the site
-  still works under a dumb static server.
+  time + the snippet whose `start` is closest at-or-before the mark minus a
+  1s reaction lag (`findSnippet` in `helpers.js`; the lag makes a mark pressed
+  just after a sentence ends show that sentence, not the next one). No
+  transcript → plain times; the site still works under a dumb static server.
 
 ## Files
 

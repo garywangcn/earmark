@@ -20,6 +20,11 @@ let playerReady = false;
 let currentVideoId = store.state.lastVideoId;
 const transcripts = {}; // videoId -> snippets, fetched from server.py
 
+// Marks are usually pressed shortly AFTER the interesting sentence ends, so
+// match subtitles against a slightly earlier time to show the sentence the
+// user actually reacted to rather than the one that just started.
+const REACTION_LAG = 1.0;
+
 els.offsetInput.value = store.state.settings.rewindSeconds;
 
 function showError(msg) {
@@ -54,7 +59,7 @@ function renderTimestamps(videoId, video) {
     time.className = "time";
     time.textContent = formatTime(t);
     jump.appendChild(time);
-    const snippet = findSnippet(transcripts[videoId], t);
+    const snippet = findSnippet(transcripts[videoId], t - REACTION_LAG);
     if (snippet) {
       const text = document.createElement("span");
       text.className = "snippet";

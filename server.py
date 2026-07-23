@@ -5,6 +5,7 @@ Usage: python3 server.py [port]   (default port 8787)
 Requires: pip install youtube-transcript-api
 """
 import json
+import os
 import re
 import sys
 from functools import partial
@@ -74,7 +75,8 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8787
+    # Port precedence: CLI arg, then $PORT (set by Cloud Run), then 8787.
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", "8787"))
     handler = partial(Handler, directory=str(Path(__file__).parent))
     server = ThreadingHTTPServer(("", port), handler)
     print(f"EarMark on http://localhost:{port}")

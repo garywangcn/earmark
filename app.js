@@ -13,6 +13,11 @@ const els = {
   exportBtn: document.getElementById("export-btn"),
   importBtn: document.getElementById("import-btn"),
   importFile: document.getElementById("import-file"),
+  pasteBtn: document.getElementById("paste-btn"),
+  pastePanel: document.getElementById("paste-panel"),
+  pasteText: document.getElementById("paste-text"),
+  pasteSave: document.getElementById("paste-save"),
+  pasteCancel: document.getElementById("paste-cancel"),
 };
 
 let player = null;
@@ -59,7 +64,7 @@ function renderTimestamps(videoId, video) {
     time.className = "time";
     time.textContent = formatTime(t);
     jump.appendChild(time);
-    const snippet = findSnippet(transcripts[videoId], t - REACTION_LAG);
+    const snippet = findSnippet(snippetsFor(videoId), t - REACTION_LAG);
     if (snippet) {
       const text = document.createElement("span");
       text.className = "snippet";
@@ -141,8 +146,14 @@ function fetchTitle(videoId) {
     .catch(() => {});
 }
 
+// Pasted transcripts (persisted with the video) win over server-fetched ones.
+function snippetsFor(videoId) {
+  const video = store.getVideo(videoId);
+  return (video && video.transcript) || transcripts[videoId] || null;
+}
+
 function fetchTranscript(videoId) {
-  if (transcripts[videoId]) return;
+  if (snippetsFor(videoId)) return;
   fetch(`/transcript?v=${videoId}`)
     .then((r) => (r.ok ? r.json() : null))
     .then((data) => {
@@ -241,6 +252,34 @@ els.importFile.addEventListener("change", () => {
   if (!file) return;
   file.text().then(importData);
   els.importFile.value = "";
+});
+
+els.pasteBtn.addEventListener("click", () => {
+  if (!currentVideoId) {
+    showError("Load a video first, then paste its transcript.");
+    return;
+  }
+  showError("");
+  els.pastePanel.hidden = !els.pastePanel.hidden;
+  if (!els.pastePanel.hidden) els.pasteText.focus();
+});
+
+els.pasteCancel.addEventListener("click", () => {
+  els.pastePanel.hidden = true;
+  els.pasteText.value = "";
+});
+
+els.pasteSave.addEventListener("click", () => {
+  const snippets = parseTranscriptText(els.pasteText.value);
+  if (snippets.length === 0) {
+    showError('No "0:12"-style lines found — copy the text from YouTube\'s Show transcript panel.');
+    return;
+  }
+  store.setTranscript(currentVideoId, snippets);
+  els.pastePanel.hidden = true;
+  els.pasteText.value = "";
+  showError("");
+  renderList();
 });
 
 window.onYouTubeIframeAPIReady = function () {

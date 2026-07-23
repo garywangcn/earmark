@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert");
-const { parseYouTubeUrl, formatTime, findSnippet } = require("../helpers.js");
+const { parseYouTubeUrl, formatTime, findSnippet, parseTranscriptText } = require("../helpers.js");
 
 test("parseYouTubeUrl accepts watch URLs", () => {
   assert.strictEqual(
@@ -80,4 +80,35 @@ test("findSnippet returns null before the first line or without a transcript", (
   assert.strictEqual(findSnippet(snippets, 0.5), null);
   assert.strictEqual(findSnippet(null, 5), null);
   assert.strictEqual(findSnippet([], 5), null);
+});
+
+test("parseTranscriptText parses YouTube's Show-transcript copy format", () => {
+  const text = "0:00\nAll right, so here we are\n0:05\nthe cool thing about these guys\n1:02\nreally long trunks";
+  assert.deepStrictEqual(parseTranscriptText(text), [
+    { start: 0, text: "All right, so here we are" },
+    { start: 5, text: "the cool thing about these guys" },
+    { start: 62, text: "really long trunks" },
+  ]);
+});
+
+test("parseTranscriptText handles hours and multi-line text", () => {
+  const text = "1:02:05\nfirst line\nsecond line of same snippet\n1:02:30\nnext";
+  assert.deepStrictEqual(parseTranscriptText(text), [
+    { start: 3725, text: "first line second line of same snippet" },
+    { start: 3750, text: "next" },
+  ]);
+});
+
+test("parseTranscriptText skips headers, blank lines, and junk", () => {
+  const text = "Intro\n\n0:12\n  hello there  \n\nChapter Two\n0:20\nworld";
+  assert.deepStrictEqual(parseTranscriptText(text), [
+    { start: 12, text: "hello there Chapter Two" },
+    { start: 20, text: "world" },
+  ]);
+});
+
+test("parseTranscriptText returns [] for unusable input", () => {
+  assert.deepStrictEqual(parseTranscriptText(""), []);
+  assert.deepStrictEqual(parseTranscriptText("no timestamps here\njust text"), []);
+  assert.deepStrictEqual(parseTranscriptText("0:12\n0:15\n"), []);
 });

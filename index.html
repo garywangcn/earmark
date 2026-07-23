@@ -11,7 +11,15 @@
     <div id="sidebar-actions">
       <button id="export-btn" type="button" title="Download all lists as a JSON file">Export</button>
       <button id="import-btn" type="button" title="Merge lists from an exported JSON file">Import</button>
+      <button id="paste-btn" type="button" title="Paste a transcript copied from YouTube's Show transcript panel">Transcript</button>
       <input id="import-file" type="file" accept=".json,application/json" hidden />
+    </div>
+    <div id="paste-panel" hidden>
+      <textarea id="paste-text" placeholder="On YouTube: ⋯ → Show transcript → select all → copy, then paste here"></textarea>
+      <div id="paste-panel-actions">
+        <button id="paste-save" type="button">Save to current video</button>
+        <button id="paste-cancel" type="button">Cancel</button>
+      </div>
     </div>
     <div id="video-groups"></div>
     <p id="empty-hint">Load a video, then press SPACE while it plays to mark a moment.</p>

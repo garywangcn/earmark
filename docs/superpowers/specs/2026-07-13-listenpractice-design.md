@@ -16,6 +16,12 @@ bookmark to jump back to that moment minus a configurable rewind offset.
   two lines (line-clamp), full text on hover. Each group header has a × that
   deletes the video and its timestamps (`store.deleteVideo`; clears
   `lastVideoId` if it pointed there).
+- **Paste-in transcripts (added 2026-07-17):** for deployments whose IP YouTube
+  blocks (Cloud Run), the Transcript button opens a paste panel; text copied
+  from YouTube's "Show transcript" panel is parsed by `parseTranscriptText`
+  (helpers.js) and persisted per video via `store.setTranscript`. Stored
+  transcripts win over server-fetched ones, ride along in Export/Import
+  (local wins on merge), and `save()` tolerates localStorage quota errors.
 - **Export/Import (added 2026-07-15):** Export downloads
   `{app, version, exportedAt, videos}` as JSON; Import merges a file back via
   `store.mergeVideos` — new videos added, timestamps unioned with the 0.5s

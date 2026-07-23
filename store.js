@@ -16,7 +16,11 @@ function createStore(storage) {
   }
 
   function save() {
-    storage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      storage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Quota exceeded (large transcripts) — keep running on in-memory state.
+    }
   }
 
   function ensureVideo(videoId) {
@@ -72,6 +76,9 @@ function createStore(storage) {
         const video = ensureVideo(videoId);
         if (isNew && typeof incoming.title === "string") video.title = incoming.title;
         if (isNew && typeof incoming.folded === "boolean") video.folded = incoming.folded;
+        if (!video.transcript && Array.isArray(incoming.transcript)) {
+          video.transcript = incoming.transcript;
+        }
         for (const t of incoming.timestamps) {
           if (typeof t !== "number" || !Number.isFinite(t) || t < 0) continue;
           if (video.timestamps.some((e) => Math.abs(e - t) < 0.5)) continue;
@@ -87,6 +94,10 @@ function createStore(storage) {
     deleteVideo(videoId) {
       delete state.videos[videoId];
       if (state.lastVideoId === videoId) state.lastVideoId = null;
+      save();
+    },
+    setTranscript(videoId, snippets) {
+      ensureVideo(videoId).transcript = snippets;
       save();
     },
     setFolded(videoId, folded) {

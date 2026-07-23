@@ -97,6 +97,30 @@ body {
 }
 #sidebar-actions button:hover { border-color: #1a73e8; color: #1a73e8; }
 
+#paste-panel { margin-bottom: 12px; }
+#paste-text {
+  width: 100%;
+  height: 110px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 12.5px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+#paste-panel-actions { display: flex; gap: 8px; margin-top: 6px; }
+#paste-panel-actions button {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: #555;
+}
+#paste-panel-actions button:hover { border-color: #1a73e8; color: #1a73e8; }
+
 main {
   flex: 1;
   display: flex;

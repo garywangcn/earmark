@@ -34,6 +34,12 @@ Subtitle lines come from the video's captions (manual track preferred, else
 auto-generated), shown up to two lines — hover an entry to see the full line.
 Videos without captions show plain times.
 
+**No transcript server?** (e.g. the site deployed to Cloud Run, where YouTube
+blocks transcript fetches from datacenter IPs): use the **Transcript** button —
+on YouTube open ⋯ → *Show transcript*, copy the text, and paste it in. The
+parsed lines are saved with the video (and included in Export), so subtitles
+work on any deployment with one paste per video.
+
 Note: if you clicked inside the video itself, YouTube owns the keyboard for a
 moment and SPACE toggles play/pause; the app reclaims focus on the next
 play/pause, or just use the **⏺ Mark** button.

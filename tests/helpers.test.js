@@ -87,9 +87,9 @@ test("findSnippet returns null before the first line or without a transcript", (
   assert.strictEqual(findSnippet([], 5), null);
 });
 
-test("findSnippetsInRange returns every line spoken in the window", () => {
+test("findSnippetsInRange returns lines that start inside the window", () => {
   assert.deepStrictEqual(
-    findSnippetsInRange(snippets, 2.0, 8.5).map((s) => s.text),
+    findSnippetsInRange(snippets, 1.0, 8.5).map((s) => s.text),
     ["here we are", "the cool thing", "long trunks"]
   );
   assert.deepStrictEqual(
@@ -98,22 +98,17 @@ test("findSnippetsInRange returns every line spoken in the window", () => {
   );
 });
 
-test("findSnippetsInRange excludes lines that ended before the window", () => {
-  // "here we are" ends at 3.36; a window starting at 4.0 must not include it.
-  assert.deepStrictEqual(
-    findSnippetsInRange(snippets, 4.0, 6.0).map((s) => s.text),
-    ["the cool thing"]
-  );
-});
-
-test("findSnippetsInRange treats zero-duration lines as lasting to the next line", () => {
-  const pasted = [
-    { start: 10, text: "first" },
-    { start: 20, text: "second" },
+test("findSnippetsInRange excludes lines that started before the window", () => {
+  // Auto-caption durations often stretch across silence: a line starting at
+  // 1.2 must not appear in a window starting at 2.0, even though its nominal
+  // duration may overlap it.
+  const stretched = [
+    { start: 1.2, duration: 6.0, text: "before the window" },
+    { start: 5.32, duration: 2.66, text: "inside the window" },
   ];
   assert.deepStrictEqual(
-    findSnippetsInRange(pasted, 15, 16).map((s) => s.text),
-    ["first"]
+    findSnippetsInRange(stretched, 2.0, 6.0).map((s) => s.text),
+    ["inside the window"]
   );
 });
 

@@ -45,24 +45,15 @@ function findSnippet(snippets, seconds) {
   return found;
 }
 
-// All snippets whose spoken interval overlaps [from, to]. A snippet with no
-// duration (pasted transcripts) lasts until the next snippet starts. Falls
-// back to the last line at-or-before `to` when nothing overlaps, so marks in
-// silence still show what was just said.
+// Lines spoken in the replay window [from, to]: every snippet that STARTS
+// inside it. Only start times are trusted — caption durations (especially
+// auto-generated ones) often stretch across silence, which would wrongly pull
+// in lines spoken before the window. Falls back to the last line at-or-before
+// `to` when the window contains none, so marks in silence still show what was
+// just said.
 function findSnippetsInRange(snippets, from, to) {
   if (!Array.isArray(snippets) || snippets.length === 0) return [];
-  const result = [];
-  for (let i = 0; i < snippets.length; i++) {
-    const s = snippets[i];
-    if (s.start > to) break;
-    const end =
-      s.duration > 0
-        ? s.start + s.duration
-        : i + 1 < snippets.length
-          ? snippets[i + 1].start
-          : Infinity;
-    if (end > from) result.push(s);
-  }
+  const result = snippets.filter((s) => s.start >= from && s.start <= to);
   if (result.length === 0) {
     const last = findSnippet(snippets, to);
     if (last) result.push(last);

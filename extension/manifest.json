@@ -5,7 +5,7 @@
   "description": "EarMark listening practice: mark moments in YouTube videos with SPACE and replay them with subtitles.",
   "action": { "default_title": "Open EarMark" },
   "background": { "service_worker": "background.js" },
-  "permissions": ["declarativeNetRequestWithHostAccess", "contextMenus"],
+  "permissions": ["declarativeNetRequestWithHostAccess", "contextMenus", "scripting", "activeTab"],
   "content_scripts": [
     {
       "matches": ["http://localhost/*", "http://127.0.0.1/*", "https://*.run.app/*"],

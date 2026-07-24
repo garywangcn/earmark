@@ -139,7 +139,10 @@ Single key `listenpractice:v1`:
   opens `app/index.html?v=<id>`; a `contextMenus` item ("Open in EarMark", page
   and link contexts on YouTube) does the same from a right-click. The app page
   reads `?v=` on startup, `loadVideo`s it, and strips the query with
-  `history.replaceState` so a refresh falls back to `lastVideoId`.
+  `history.replaceState` so a refresh falls back to `lastVideoId`. Opening a
+  page's own video also pauses it in the source tab via
+  `chrome.scripting.executeScript` (`scripting`/`activeTab` permissions) so it
+  doesn't keep playing in the background; opening from a link doesn't pause.
 
 ## Files
 

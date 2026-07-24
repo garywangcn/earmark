@@ -8,15 +8,33 @@ importScripts("app/helpers.js"); // parseYouTubeUrl
 
 const cache = {}; // "videoId|tlang" -> { snippets, translated }
 
-// Open the app, loading `videoId` if given (via ?v= on the app URL).
-function openInEarMark(videoId) {
+// Pause any playing <video> in a tab (the source YouTube page), so it doesn't
+// keep playing in the background once the video moves into EarMark.
+function pauseTabVideo(tabId) {
+  if (typeof tabId !== "number") return;
+  chrome.scripting
+    .executeScript({
+      target: { tabId },
+      func: () => {
+        for (const v of document.querySelectorAll("video")) {
+          if (!v.paused) v.pause();
+        }
+      },
+    })
+    .catch(() => {}); // e.g. no host access to this tab — open anyway
+}
+
+// Open the app, loading `videoId` if given (via ?v= on the app URL), and pause
+// the source tab's video when we're pulling a video out of it.
+function openInEarMark(videoId, sourceTabId) {
+  if (videoId) pauseTabVideo(sourceTabId);
   const base = chrome.runtime.getURL("app/index.html");
   chrome.tabs.create({ url: videoId ? `${base}?v=${videoId}` : base });
 }
 
 // Toolbar icon: open EarMark, loading the current tab's YouTube video if any.
 chrome.action.onClicked.addListener((tab) => {
-  openInEarMark(tab && tab.url ? parseYouTubeUrl(tab.url) : null);
+  openInEarMark(tab && tab.url ? parseYouTubeUrl(tab.url) : null, tab && tab.id);
 });
 
 // Right-click a YouTube page or link -> "Open in EarMark".
@@ -31,7 +49,12 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== "open-in-earmark") return;
-  openInEarMark(parseYouTubeUrl(info.linkUrl || (tab && tab.url) || ""));
+  // Only pause when opening the page's own video (not a link to another video).
+  const fromLink = !!info.linkUrl;
+  openInEarMark(
+    parseYouTubeUrl(info.linkUrl || (tab && tab.url) || ""),
+    fromLink ? undefined : tab && tab.id
+  );
 });
 
 // YouTube's embed player requires an identifying HTTP Referer, which

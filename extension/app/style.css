@@ -64,10 +64,16 @@ body {
 .jump:hover { background: #e8f0fe; }
 .jump:hover .time { color: #1a73e8; }
 .jump .time { font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.jump .texts { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .jump .snippet {
-  flex: 1;
-  min-width: 0;
   color: #666;
+  font-size: 12.5px;
+  line-height: 1.45;
+  user-select: text;
+  cursor: text;
+}
+.jump .translation {
+  color: #345c8c;
   font-size: 12.5px;
   line-height: 1.45;
   user-select: text;
@@ -124,3 +130,4 @@ main {
 #controls { display: flex; align-items: center; gap: 16px; }
 #controls label { display: flex; align-items: center; gap: 6px; font-size: 14px; }
 #offset-input { width: 64px; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+#translate-select { padding: 8px; border: 1px solid #ccc; border-radius: 6px; background: #fff; font-size: 14px; }

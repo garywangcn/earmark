@@ -144,6 +144,23 @@ test("mergeVideos keeps the local transcript over the incoming one", () => {
   assert.deepStrictEqual(store.getVideo("vid00000001").transcript, [{ start: 1, text: "local" }]);
 });
 
+test("translateTo defaults to zh-Hans, also for pre-existing stored settings", () => {
+  assert.strictEqual(createStore(fakeStorage()).state.settings.translateTo, "zh-Hans");
+  const legacy = JSON.stringify({ settings: { rewindSeconds: 4 }, lastVideoId: null, videos: {} });
+  const store = createStore(fakeStorage(legacy));
+  assert.strictEqual(store.state.settings.translateTo, "zh-Hans");
+  assert.strictEqual(store.state.settings.rewindSeconds, 4);
+});
+
+test("setTranslateTo persists, including the empty (off) value", () => {
+  const storage = fakeStorage();
+  const store = createStore(storage);
+  store.setTranslateTo("");
+  assert.strictEqual(createStore(storage).state.settings.translateTo, "");
+  store.setTranslateTo("ja");
+  assert.strictEqual(createStore(storage).state.settings.translateTo, "ja");
+});
+
 test("setTitle, setFolded, setRewindSeconds persist", () => {
   const storage = fakeStorage();
   const store = createStore(storage);

@@ -4,7 +4,7 @@
 // watch page -> INNERTUBE_API_KEY -> InnerTube player (ANDROID client, which
 // doesn't require a proof-of-origin token) -> timedtext XML.
 
-const cache = {}; // videoId -> snippets
+const cache = {}; // "videoId|tlang" -> { snippets, translated }
 
 // Toolbar icon opens the app.
 chrome.action.onClicked.addListener(() => {
@@ -84,8 +84,9 @@ function parseTimedTextXml(xml) {
   return snippets;
 }
 
-async function fetchTranscript(videoId) {
-  if (cache[videoId]) return cache[videoId];
+async function fetchTranscript(videoId, tlang) {
+  const cacheKey = `${videoId}|${tlang || ""}`;
+  if (cache[cacheKey]) return cache[cacheKey];
   const html = await (await fetch(`https://www.youtube.com/watch?v=${videoId}`)).text();
   const key = html.match(/"INNERTUBE_API_KEY":\s*"([a-zA-Z0-9_-]+)"/)?.[1];
   if (!key) return null;
@@ -106,17 +107,31 @@ async function fetchTranscript(videoId) {
   const xml = await (await fetch(track.baseUrl)).text();
   const snippets = parseTimedTextXml(xml);
   if (snippets.length === 0) return null;
-  cache[videoId] = snippets;
-  return snippets;
+
+  // YouTube can translate any translatable track server-side via &tlang=.
+  let translated = null;
+  if (tlang && track.isTranslatable !== false) {
+    try {
+      const txml = await (await fetch(`${track.baseUrl}&tlang=${encodeURIComponent(tlang)}`)).text();
+      const tsnips = parseTimedTextXml(txml);
+      if (tsnips.length > 0) translated = tsnips;
+    } catch {
+      // translation is best-effort; original snippets still get returned
+    }
+  }
+
+  const payload = { snippets, translated };
+  cache[cacheKey] = payload;
+  return payload;
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (!msg || !/^[A-Za-z0-9_-]{11}$/.test(msg.videoId || "")) {
-    sendResponse({ snippets: null });
+    sendResponse({ snippets: null, translated: null });
     return false;
   }
-  fetchTranscript(msg.videoId)
-    .then((snippets) => sendResponse({ snippets }))
-    .catch(() => sendResponse({ snippets: null }));
+  fetchTranscript(msg.videoId, typeof msg.tlang === "string" ? msg.tlang : "")
+    .then((payload) => sendResponse(payload || { snippets: null, translated: null }))
+    .catch(() => sendResponse({ snippets: null, translated: null }));
   return true; // keep the message channel open for the async response
 });

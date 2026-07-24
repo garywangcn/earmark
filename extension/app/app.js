@@ -11,6 +11,7 @@ const els = {
   emptyHint: document.getElementById("empty-hint"),
   markBtn: document.getElementById("mark-btn"),
   offsetInput: document.getElementById("offset-input"),
+  translateSelect: document.getElementById("translate-select"),
   exportBtn: document.getElementById("export-btn"),
   importBtn: document.getElementById("import-btn"),
   importFile: document.getElementById("import-file"),
@@ -18,6 +19,7 @@ const els = {
 
 let currentVideoId = store.state.lastVideoId;
 const transcripts = {}; // videoId -> snippets, fetched via the extension
+const translations = {}; // videoId -> translated snippets (per settings.translateTo)
 
 // True when running as the extension's own app page (chrome-extension://…),
 // where the background worker is reachable directly.
@@ -42,6 +44,7 @@ const player = createPlayerController(els.playerFrame, {
 });
 
 els.offsetInput.value = store.state.settings.rewindSeconds;
+els.translateSelect.value = store.state.settings.translateTo;
 
 function showError(msg) {
   els.error.textContent = msg;
@@ -80,10 +83,21 @@ function renderTimestamps(videoId, video) {
     const matched = findSnippetsInRange(snippetsFor(videoId), from, t);
     if (matched.length > 0) {
       const joined = matched.map((s) => s.text).join(" ").replace(/\s+/g, " ");
+      const texts = document.createElement("span");
+      texts.className = "texts";
       const text = document.createElement("span");
       text.className = "snippet";
       text.textContent = joined;
-      jump.appendChild(text);
+      texts.appendChild(text);
+      const matchedT = findSnippetsInRange(translations[videoId], from, t);
+      if (matchedT.length > 0) {
+        const tjoined = matchedT.map((s) => s.text).join(" ").replace(/\s+/g, " ");
+        const translation = document.createElement("span");
+        translation.className = "translation";
+        translation.textContent = tjoined;
+        texts.appendChild(translation);
+      }
+      jump.appendChild(texts);
       jump.title = joined;
     }
     jump.addEventListener("click", () => {
@@ -171,19 +185,27 @@ function snippetsFor(videoId) {
 // messaged directly; on the website the content script relays a postMessage.
 // Fails silently (extension missing/no captions) — pasted transcripts
 // (Transcript button) are the fallback.
-function receiveSnippets(videoId, snippets) {
+function receiveSnippets(videoId, snippets, translated) {
+  let changed = false;
   if (Array.isArray(snippets) && snippets.length > 0 && !snippetsFor(videoId)) {
     transcripts[videoId] = snippets;
-    renderList();
+    changed = true;
   }
+  if (Array.isArray(translated) && translated.length > 0 && !translations[videoId]) {
+    translations[videoId] = translated;
+    changed = true;
+  }
+  if (changed) renderList();
 }
 
 function fetchTranscript(videoId) {
-  if (snippetsFor(videoId)) return;
+  const wantTranslation = !!store.state.settings.translateTo && !translations[videoId];
+  if (snippetsFor(videoId) && !wantTranslation) return;
+  const tlang = store.state.settings.translateTo;
   if (IS_EXTENSION_PAGE) {
-    chrome.runtime.sendMessage({ videoId }, (response) => {
+    chrome.runtime.sendMessage({ videoId, tlang }, (response) => {
       void chrome.runtime.lastError;
-      receiveSnippets(videoId, response && response.snippets);
+      receiveSnippets(videoId, response && response.snippets, response && response.translated);
     });
     return;
   }
@@ -193,11 +215,11 @@ function fetchTranscript(videoId) {
     if (msg.type !== "earmark-transcript-response" || msg.videoId !== videoId) return;
     window.removeEventListener("message", onMessage);
     clearTimeout(timer);
-    receiveSnippets(videoId, msg.snippets);
+    receiveSnippets(videoId, msg.snippets, msg.translated);
   };
   const timer = setTimeout(() => window.removeEventListener("message", onMessage), 10000);
   window.addEventListener("message", onMessage);
-  window.postMessage({ type: "earmark-transcript-request", videoId }, window.location.origin);
+  window.postMessage({ type: "earmark-transcript-request", videoId, tlang }, window.location.origin);
 }
 
 function loadVideo(videoId) {
@@ -245,6 +267,17 @@ els.offsetInput.addEventListener("change", () => {
   store.setRewindSeconds(n);
   els.offsetInput.blur();
   renderList(); // displayed subtitle ranges depend on the offset
+});
+
+els.translateSelect.addEventListener("change", () => {
+  store.setTranslateTo(els.translateSelect.value);
+  for (const videoId of Object.keys(translations)) delete translations[videoId];
+  renderList();
+  if (store.state.settings.translateTo) {
+    for (const [videoId, video] of Object.entries(store.state.videos)) {
+      if (videoId === currentVideoId || video.timestamps.length > 0) fetchTranscript(videoId);
+    }
+  }
 });
 
 els.exportBtn.addEventListener("click", () => {

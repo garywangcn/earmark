@@ -121,6 +121,14 @@ Single key `listenpractice:v1`:
 - The paste-in Transcript button was removed on 2026-07-23 (auto-fetch via the
   extension covers it); stored `video.transcript` data is still read and
   merged for backward compatibility.
+- **Translation (added 2026-07-23):** `settings.translateTo` (default
+  `zh-Hans`, "" = off; Translate dropdown in the controls row). The background
+  worker additionally fetches the caption track with `&tlang=<code>` —
+  YouTube translates server-side — and each mark shows the translated lines
+  for its replay window beneath the original. Best-effort: original always
+  renders even if the translation fetch fails. Google-Translate-style page
+  extensions can't help here because Chrome bars extensions from other
+  extensions' pages.
 
 ## Files
 

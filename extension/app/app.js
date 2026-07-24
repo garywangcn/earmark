@@ -62,6 +62,14 @@ function showError(msg) {
   els.error.hidden = !msg;
 }
 
+const watchUrl = (videoId) => `https://www.youtube.com/watch?v=${videoId}`;
+
+// Reflect the loaded video's URL in the input box (e.g. when playing from the
+// sidebar), so it can be seen and copied.
+function showVideoUrl(videoId) {
+  els.urlInput.value = watchUrl(videoId);
+}
+
 function jumpTo(videoId, t) {
   const target = Math.max(0, t - store.state.settings.rewindSeconds);
   if (videoId === currentVideoId) {
@@ -72,6 +80,7 @@ function jumpTo(videoId, t) {
     currentVideoId = videoId;
     store.setLastVideo(videoId);
     showError("");
+    showVideoUrl(videoId);
     fetchTranscript(videoId);
     player.load(videoId, target);
     renderList();
@@ -173,8 +182,7 @@ function renderList() {
 }
 
 function fetchTitle(videoId) {
-  const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`)
+  fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl(videoId))}&format=json`)
     .then((r) => (r.ok ? r.json() : null))
     .then((data) => {
       if (data && data.title) {
@@ -237,6 +245,7 @@ function loadVideo(videoId) {
   currentVideoId = videoId;
   store.setLastVideo(videoId);
   showError("");
+  showVideoUrl(videoId);
   player.cue(videoId);
   fetchTitle(videoId);
   fetchTranscript(videoId);
@@ -285,16 +294,22 @@ els.translateSelect.addEventListener("change", () => {
   for (const videoId of Object.keys(translations)) delete translations[videoId];
   applyTranslationVisibility();
   renderList();
-  if (store.state.settings.translateTo) {
-    for (const [videoId, video] of Object.entries(store.state.videos)) {
-      if (videoId === currentVideoId || video.timestamps.length > 0) fetchTranscript(videoId);
-    }
-  }
+  ensureTranslations();
 });
+
+// Fetch translations for the current video and any with marks, if a target
+// language is set. fetchTranscript no-ops when a translation is already loaded.
+function ensureTranslations() {
+  if (!store.state.settings.translateTo) return;
+  for (const [videoId, video] of Object.entries(store.state.videos)) {
+    if (videoId === currentVideoId || video.timestamps.length > 0) fetchTranscript(videoId);
+  }
+}
 
 els.translationToggle.addEventListener("click", () => {
   store.setShowTranslation(!store.state.settings.showTranslation);
   applyTranslationVisibility();
+  if (store.state.settings.showTranslation) ensureTranslations();
 });
 
 els.exportBtn.addEventListener("click", () => {
@@ -347,6 +362,7 @@ if (requestedVideo && /^[A-Za-z0-9_-]{11}$/.test(requestedVideo)) {
   history.replaceState(null, "", location.pathname);
   loadVideo(requestedVideo);
 } else if (currentVideoId) {
+  showVideoUrl(currentVideoId);
   player.cue(currentVideoId);
 }
 for (const [videoId, video] of Object.entries(store.state.videos)) {

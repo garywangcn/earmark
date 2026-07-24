@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert");
-const { parseYouTubeUrl, formatTime, findSnippet, parseTranscriptText } = require("../helpers.js");
+const { parseYouTubeUrl, formatTime, findSnippet, parseTranscriptText } = require("../extension/app/helpers.js");
 
 test("parseYouTubeUrl accepts watch URLs", () => {
   assert.strictEqual(

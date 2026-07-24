@@ -2,8 +2,13 @@
   "manifest_version": 3,
   "name": "EarMark Transcripts",
   "version": "1.0.0",
-  "description": "Fetches YouTube transcripts for the EarMark listening-practice app.",
+  "description": "EarMark listening practice: mark moments in YouTube videos with SPACE and replay them with subtitles.",
+  "action": { "default_title": "Open EarMark" },
   "background": { "service_worker": "background.js" },
+  "permissions": ["declarativeNetRequestWithHostAccess"],
+  "declarative_net_request": {
+    "rule_resources": [{ "id": "embed_referer", "enabled": true, "path": "rules.json" }]
+  },
   "content_scripts": [
     {
       "matches": ["http://localhost/*", "http://127.0.0.1/*", "https://*.run.app/*"],

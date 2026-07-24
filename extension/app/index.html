@@ -30,7 +30,9 @@
       <button type="submit">Load</button>
     </form>
     <p id="error" hidden></p>
-    <div id="player-wrap"><div id="player"></div></div>
+    <div id="player-wrap">
+      <iframe id="player" title="YouTube player" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+    </div>
     <div id="controls">
       <button id="mark-btn" type="button">⏺ Mark (Space)</button>
       <label>Rewind offset
@@ -41,7 +43,7 @@
   </main>
   <script src="helpers.js"></script>
   <script src="store.js"></script>
+  <script src="player.js"></script>
   <script src="app.js"></script>
-  <script src="https://www.youtube.com/iframe_api" async></script>
 </body>
 </html>

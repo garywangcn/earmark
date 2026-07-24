@@ -105,6 +105,15 @@ Single key `listenpractice:v1`:
   track preferred over ASR; cached per video). The page times out silently
   after 10s when the extension isn't installed.
 - `server.py` is a plain static file server (stdlib only, no dependencies).
+- **All-in-one extension (2026-07-23):** the app itself lives in
+  `extension/app/` (single source for the extension page, `server.py`, and the
+  Dockerfile). The toolbar action opens `app/index.html` as an extension page.
+  Because MV3 pages can't load YouTube's remote `iframe_api` script,
+  `player.js` drives the embed iframe directly via the widget postMessage
+  protocol (`listening` handshake, `command` events, `infoDelivery` time/state
+  tracking); the same controller is used on the website. The app page talks to
+  the background worker via `chrome.runtime.sendMessage`; websites go through
+  the content-script bridge.
 - Each timestamp renders as time + the snippet whose `start` is closest
   at-or-before the mark minus a 1s reaction lag (`findSnippet` in
   `helpers.js`; the lag makes a mark pressed just after a sentence ends show

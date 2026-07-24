@@ -4,28 +4,30 @@ Practice listening with YouTube videos: bookmark moments with SPACE, click a
 bookmark to replay from a few seconds before it. When a video has subtitles,
 each bookmark also shows the line being spoken at that moment.
 
-## Run
-
-```sh
-python3 server.py    # http://localhost:8787 (or: python3 server.py 9000)
-```
-
-No dependencies — `server.py` just serves the static files (any static file
-server works; the YouTube player API needs http(s), not `file://`).
-
-## Subtitles: install the browser extension (once)
-
-Subtitle lines are fetched by a small Chrome extension, because web pages
-can't read YouTube's caption endpoints (CORS) and datacenter IPs (Cloud Run
-etc.) are blocked by YouTube:
+## Install (everything lives in the Chrome extension)
 
 1. Open `chrome://extensions`, enable **Developer mode** (top right).
 2. Click **Load unpacked** and choose this repo's `extension/` folder.
+3. Click the **EarMark** toolbar icon — the full app opens in a tab, with
+   automatic subtitles. No server, no dependencies.
 
-That's it — the extension activates on `localhost`, `127.0.0.1`, and
-`*.run.app` pages, fetches captions from your browser (your own IP), and hands
-them to the app. Without the extension, use the **Transcript** paste-in button
-instead; both fall back to plain times.
+The extension fetches captions from your own browser/IP, which is why it
+works where server-side fetching doesn't (YouTube blocks datacenter IPs and
+CORS blocks web pages).
+
+## Optional: run as a website
+
+```sh
+python3 server.py    # serves extension/app at http://localhost:8787
+```
+
+The same app works as a plain website (also deployable with the included
+`Dockerfile`, e.g. Cloud Run). With the extension installed, website pages on
+`localhost`, `127.0.0.1`, and `*.run.app` get automatic subtitles too;
+without it, use the **Transcript** paste-in button.
+
+Note: the extension app page and each website origin keep separate
+localStorage — use **Export**/**Import** to move your lists between them.
 
 ## Use
 

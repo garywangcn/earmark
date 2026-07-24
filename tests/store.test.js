@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert");
-const { createStore, STORAGE_KEY } = require("../store.js");
+const { createStore, STORAGE_KEY } = require("../extension/app/store.js");
 
 function fakeStorage(initial) {
   const map = new Map(initial ? [[STORAGE_KEY, initial]] : []);

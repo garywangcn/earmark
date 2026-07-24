@@ -2,7 +2,8 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY server.py index.html app.js helpers.js store.js style.css ./
+COPY server.py ./
+COPY extension/app ./extension/app
 
 ENV PYTHONUNBUFFERED=1
 

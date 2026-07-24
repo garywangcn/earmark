@@ -3,6 +3,7 @@
 const store = createStore(window.localStorage);
 
 const els = {
+  playerFrame: document.getElementById("player"),
   form: document.getElementById("load-form"),
   urlInput: document.getElementById("url-input"),
   error: document.getElementById("error"),
@@ -20,10 +21,30 @@ const els = {
   pasteCancel: document.getElementById("paste-cancel"),
 };
 
-let player = null;
-let playerReady = false;
 let currentVideoId = store.state.lastVideoId;
-const transcripts = {}; // videoId -> snippets, fetched from server.py
+const transcripts = {}; // videoId -> snippets, fetched via the extension
+
+// True when running as the extension's own app page (chrome-extension://…),
+// where the background worker is reachable directly.
+const IS_EXTENSION_PAGE =
+  typeof chrome !== "undefined" &&
+  !!(chrome.runtime && chrome.runtime.id) &&
+  window.location.protocol === "chrome-extension:";
+
+const player = createPlayerController(els.playerFrame, {
+  onStateChange: () => {
+    // After clicking inside the YouTube iframe, keyboard focus belongs to
+    // YouTube and SPACE toggles play/pause there. Pull focus back so our
+    // SPACE listener works again.
+    if (document.activeElement instanceof HTMLIFrameElement) {
+      document.activeElement.blur();
+      window.focus();
+    }
+  },
+  onError: (code) => {
+    showError(`This video can't be played here (removed, private, or embedding disabled — error ${code}).`);
+  },
+});
 
 // Marks are usually pressed shortly AFTER the interesting sentence ends, so
 // match subtitles against a slightly earlier time to show the sentence the
@@ -40,15 +61,15 @@ function showError(msg) {
 function jumpTo(videoId, t) {
   const target = Math.max(0, t - store.state.settings.rewindSeconds);
   if (videoId === currentVideoId) {
-    if (!playerReady) return;
-    player.seekTo(target, true);
-    player.playVideo();
+    if (!player.hasVideo) return;
+    player.seekTo(target);
+    player.play();
   } else {
     currentVideoId = videoId;
     store.setLastVideo(videoId);
     showError("");
     fetchTranscript(videoId);
-    if (playerReady) player.loadVideoById(videoId, target);
+    player.load(videoId, target);
     renderList();
   }
 }
@@ -152,23 +173,34 @@ function snippetsFor(videoId) {
   return (video && video.transcript) || transcripts[videoId] || null;
 }
 
-// Transcripts come from the EarMark Transcripts browser extension (extension/
-// in the repo): the page posts a request, the extension's content script
-// relays it to a background worker that can fetch YouTube captions without
-// CORS restrictions. Times out silently when the extension isn't installed —
-// pasted transcripts (Transcript button) are the fallback.
+// Transcripts come from the extension's background worker, which can fetch
+// YouTube captions without CORS restrictions. On the extension app page it is
+// messaged directly; on the website the content script relays a postMessage.
+// Fails silently (extension missing/no captions) — pasted transcripts
+// (Transcript button) are the fallback.
+function receiveSnippets(videoId, snippets) {
+  if (Array.isArray(snippets) && snippets.length > 0 && !snippetsFor(videoId)) {
+    transcripts[videoId] = snippets;
+    renderList();
+  }
+}
+
 function fetchTranscript(videoId) {
   if (snippetsFor(videoId)) return;
+  if (IS_EXTENSION_PAGE) {
+    chrome.runtime.sendMessage({ videoId }, (response) => {
+      void chrome.runtime.lastError;
+      receiveSnippets(videoId, response && response.snippets);
+    });
+    return;
+  }
   const onMessage = (event) => {
     const msg = event.data;
     if (event.source !== window || !msg) return;
     if (msg.type !== "earmark-transcript-response" || msg.videoId !== videoId) return;
     window.removeEventListener("message", onMessage);
     clearTimeout(timer);
-    if (Array.isArray(msg.snippets) && msg.snippets.length > 0 && !snippetsFor(videoId)) {
-      transcripts[videoId] = msg.snippets;
-      renderList();
-    }
+    receiveSnippets(videoId, msg.snippets);
   };
   const timer = setTimeout(() => window.removeEventListener("message", onMessage), 10000);
   window.addEventListener("message", onMessage);
@@ -179,15 +211,15 @@ function loadVideo(videoId) {
   currentVideoId = videoId;
   store.setLastVideo(videoId);
   showError("");
-  if (playerReady) player.cueVideoById(videoId);
+  player.cue(videoId);
   fetchTitle(videoId);
   fetchTranscript(videoId);
   renderList();
 }
 
 function mark() {
-  if (!playerReady || !currentVideoId) return;
-  if (store.addTimestamp(currentVideoId, player.getCurrentTime())) renderList();
+  if (!player.hasVideo || !currentVideoId) return;
+  if (store.addTimestamp(currentVideoId, player.currentTime)) renderList();
 }
 
 els.form.addEventListener("submit", (e) => {
@@ -292,32 +324,7 @@ els.pasteSave.addEventListener("click", () => {
   renderList();
 });
 
-window.onYouTubeIframeAPIReady = function () {
-  player = new YT.Player("player", {
-    width: "100%",
-    height: "100%",
-    playerVars: { rel: 0 },
-    events: {
-      onReady: () => {
-        playerReady = true;
-        if (currentVideoId) player.cueVideoById(currentVideoId);
-      },
-      onStateChange: () => {
-        // After clicking inside the YouTube iframe, keyboard focus belongs to
-        // YouTube and SPACE toggles play/pause there. Pull focus back so our
-        // SPACE listener works again.
-        if (document.activeElement instanceof HTMLIFrameElement) {
-          document.activeElement.blur();
-          window.focus();
-        }
-      },
-      onError: () => {
-        showError("This video can't be played here (removed, private, or embedding disabled).");
-      },
-    },
-  });
-};
-
+if (currentVideoId) player.cue(currentVideoId);
 for (const [videoId, video] of Object.entries(store.state.videos)) {
   if (videoId === currentVideoId || video.timestamps.length > 0) fetchTranscript(videoId);
 }

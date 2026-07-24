@@ -6,6 +6,11 @@
 
 const cache = {}; // videoId -> snippets
 
+// Toolbar icon opens the app.
+chrome.action.onClicked.addListener(() => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("app/index.html") });
+});
+
 function decodeEntities(s) {
   return s
     .replace(/<[^>]+>/g, "")

@@ -24,7 +24,7 @@ class Handler(SimpleHTTPRequestHandler):
 def main():
     # Port precedence: CLI arg, then $PORT (set by Cloud Run), then 8787.
     port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", "8787"))
-    handler = partial(Handler, directory=str(Path(__file__).parent))
+    handler = partial(Handler, directory=str(Path(__file__).parent / "extension" / "app"))
     server = ThreadingHTTPServer(("", port), handler)
     print(f"EarMark on http://localhost:{port}")
     server.serve_forever()

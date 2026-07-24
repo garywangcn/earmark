@@ -14,9 +14,9 @@ chrome.action.onClicked.addListener(() => {
 // YouTube's embed player requires an identifying HTTP Referer, which
 // chrome-extension:// pages don't send (embed errors 153/152). Inject one for
 // embeds loaded by our own pages.
-function installRefererRule() {
+function installHeaderRules() {
   chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [1],
+    removeRuleIds: [1, 2],
     addRules: [
       {
         id: 1,
@@ -37,11 +37,27 @@ function installRefererRule() {
           ],
         },
       },
+      // YouTube's API answers our transcript fetches with a bot-detection
+      // block page when the automatic "Origin: chrome-extension://…" header
+      // is present. Strip it from our own requests.
+      {
+        id: 2,
+        priority: 1,
+        condition: {
+          initiatorDomains: [chrome.runtime.id],
+          requestDomains: ["www.youtube.com"],
+          resourceTypes: ["xmlhttprequest"],
+        },
+        action: {
+          type: "modifyHeaders",
+          requestHeaders: [{ header: "origin", operation: "remove" }],
+        },
+      },
     ],
   });
 }
-chrome.runtime.onInstalled.addListener(installRefererRule);
-chrome.runtime.onStartup.addListener(installRefererRule);
+chrome.runtime.onInstalled.addListener(installHeaderRules);
+chrome.runtime.onStartup.addListener(installHeaderRules);
 
 function decodeEntities(s) {
   return s

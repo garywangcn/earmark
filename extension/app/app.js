@@ -12,6 +12,7 @@ const els = {
   markBtn: document.getElementById("mark-btn"),
   offsetInput: document.getElementById("offset-input"),
   translateSelect: document.getElementById("translate-select"),
+  translationToggle: document.getElementById("translation-toggle"),
   exportBtn: document.getElementById("export-btn"),
   importBtn: document.getElementById("import-btn"),
   importFile: document.getElementById("import-file"),
@@ -45,6 +46,16 @@ const player = createPlayerController(els.playerFrame, {
 
 els.offsetInput.value = store.state.settings.rewindSeconds;
 els.translateSelect.value = store.state.settings.translateTo;
+
+// Translated lines are shown/hidden via a container class so toggling never
+// needs a re-render; the button label and control availability follow suit.
+function applyTranslationVisibility() {
+  const on = store.state.settings.showTranslation;
+  els.groups.classList.toggle("hide-translation", !on);
+  els.translationToggle.textContent = on ? "Hide translation" : "Show translation";
+  els.translationToggle.disabled = !store.state.settings.translateTo;
+}
+applyTranslationVisibility();
 
 function showError(msg) {
   els.error.textContent = msg;
@@ -272,12 +283,18 @@ els.offsetInput.addEventListener("change", () => {
 els.translateSelect.addEventListener("change", () => {
   store.setTranslateTo(els.translateSelect.value);
   for (const videoId of Object.keys(translations)) delete translations[videoId];
+  applyTranslationVisibility();
   renderList();
   if (store.state.settings.translateTo) {
     for (const [videoId, video] of Object.entries(store.state.videos)) {
       if (videoId === currentVideoId || video.timestamps.length > 0) fetchTranscript(videoId);
     }
   }
+});
+
+els.translationToggle.addEventListener("click", () => {
+  store.setShowTranslation(!store.state.settings.showTranslation);
+  applyTranslationVisibility();
 });
 
 els.exportBtn.addEventListener("click", () => {

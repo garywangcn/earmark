@@ -129,6 +129,11 @@ Single key `listenpractice:v1`:
   renders even if the translation fetch fails. Google-Translate-style page
   extensions can't help here because Chrome bars extensions from other
   extensions' pages.
+- `settings.showTranslation` (default `false`) gates whether translated lines
+  are visible: a "Show/Hide translation" toggle in the controls row flips a
+  `hide-translation` class on `#video-groups` (instant, no re-render), so the
+  original is shown first for self-testing and the translation revealed on
+  demand. Disabled when Translate is Off.
 
 ## Files
 

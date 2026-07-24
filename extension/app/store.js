@@ -15,6 +15,7 @@ function createStore(storage) {
     state = { settings: { rewindSeconds: 3 }, lastVideoId: null, videos: {} };
   }
   if (typeof state.settings.translateTo !== "string") state.settings.translateTo = "zh-Hans";
+  if (typeof state.settings.showTranslation !== "boolean") state.settings.showTranslation = false;
 
   function save() {
     try {
@@ -111,6 +112,10 @@ function createStore(storage) {
     },
     setTranslateTo(code) {
       state.settings.translateTo = code;
+      save();
+    },
+    setShowTranslation(on) {
+      state.settings.showTranslation = on;
       save();
     },
   };

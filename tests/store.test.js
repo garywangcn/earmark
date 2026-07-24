@@ -161,6 +161,15 @@ test("setTranslateTo persists, including the empty (off) value", () => {
   assert.strictEqual(createStore(storage).state.settings.translateTo, "ja");
 });
 
+test("showTranslation defaults to false and persists", () => {
+  assert.strictEqual(createStore(fakeStorage()).state.settings.showTranslation, false);
+  const legacy = JSON.stringify({ settings: { rewindSeconds: 3 }, lastVideoId: null, videos: {} });
+  assert.strictEqual(createStore(fakeStorage(legacy)).state.settings.showTranslation, false);
+  const storage = fakeStorage();
+  createStore(storage).setShowTranslation(true);
+  assert.strictEqual(createStore(storage).state.settings.showTranslation, true);
+});
+
 test("setTitle, setFolded, setRewindSeconds persist", () => {
   const storage = fakeStorage();
   const store = createStore(storage);

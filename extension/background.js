@@ -123,7 +123,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // The original and translated tracks are fetched back-to-back from the same
 // endpoint, and the second request is frequently throttled with a 429 "Sorry"
 // page — retrying with backoff recovers it.
-async function fetchTimedText(url, tries = 3) {
+async function fetchTimedText(url, tries = 4) {
   for (let i = 0; i < tries; i++) {
     try {
       const r = await fetch(url);
@@ -134,7 +134,7 @@ async function fetchTimedText(url, tries = 3) {
     } catch {
       // network hiccup — fall through to backoff and retry
     }
-    await sleep(700 * (i + 1));
+    await sleep(1000 * (i + 1)); // 1s, 2s, 3s — ride out a lingering 429
   }
   return null;
 }

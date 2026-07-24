@@ -81,7 +81,7 @@ function jumpTo(videoId, t) {
     store.setLastVideo(videoId);
     showError("");
     showVideoUrl(videoId);
-    fetchTranscript(videoId);
+    fetchTranscript(videoId, { translate: true });
     player.load(videoId, target);
     renderList();
   }
@@ -217,10 +217,14 @@ function receiveSnippets(videoId, snippets, translated) {
   if (changed) renderList();
 }
 
-function fetchTranscript(videoId) {
-  const wantTranslation = !!store.state.settings.translateTo && !translations[videoId];
+// `translate` requests the translated track too. YouTube rate-limits heavily,
+// so only the currently-watched video asks for a translation; other videos
+// fetch the plain original for the sidebar. That keeps request volume near
+// what worked before translation existed.
+function fetchTranscript(videoId, { translate = false } = {}) {
+  const tlang = translate ? store.state.settings.translateTo : "";
+  const wantTranslation = !!tlang && !translations[videoId];
   if (snippetsFor(videoId) && !wantTranslation) return;
-  const tlang = store.state.settings.translateTo;
   if (IS_EXTENSION_PAGE) {
     chrome.runtime.sendMessage({ videoId, tlang }, (response) => {
       void chrome.runtime.lastError;
@@ -249,7 +253,7 @@ function loadVideo(videoId) {
   showVideoUrl(videoId);
   player.cue(videoId);
   fetchTitle(videoId);
-  fetchTranscript(videoId);
+  fetchTranscript(videoId, { translate: true });
   renderList();
 }
 
@@ -298,12 +302,11 @@ els.translateSelect.addEventListener("change", () => {
   ensureTranslations();
 });
 
-// Fetch translations for the current video and any with marks, if a target
-// language is set. fetchTranscript no-ops when a translation is already loaded.
+// Fetch the current video's translation if a target language is set.
+// fetchTranscript no-ops when the translation is already loaded.
 function ensureTranslations() {
-  if (!store.state.settings.translateTo) return;
-  for (const [videoId, video] of Object.entries(store.state.videos)) {
-    if (videoId === currentVideoId || video.timestamps.length > 0) fetchTranscript(videoId);
+  if (store.state.settings.translateTo && currentVideoId) {
+    fetchTranscript(currentVideoId, { translate: true });
   }
 }
 
@@ -365,8 +368,11 @@ if (requestedVideo && /^[A-Za-z0-9_-]{11}$/.test(requestedVideo)) {
 } else if (currentVideoId) {
   showVideoUrl(currentVideoId);
   player.cue(currentVideoId);
+  fetchTranscript(currentVideoId, { translate: true });
 }
+// Plain originals for the other marked videos (no translation) so the sidebar
+// shows their subtitle text without flooding YouTube with translation requests.
 for (const [videoId, video] of Object.entries(store.state.videos)) {
-  if (videoId === currentVideoId || video.timestamps.length > 0) fetchTranscript(videoId);
+  if (videoId !== currentVideoId && video.timestamps.length > 0) fetchTranscript(videoId);
 }
 renderList();

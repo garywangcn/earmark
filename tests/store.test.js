@@ -124,16 +124,6 @@ test("mergeVideos persists and tolerates junk input", () => {
   assert.deepStrictEqual(reloaded.getVideo("vid00000009").timestamps, [1.5]);
 });
 
-test("setTranscript persists snippets with the video", () => {
-  const storage = fakeStorage();
-  const store = createStore(storage);
-  store.setTranscript("vid00000001", [{ start: 12, text: "hello" }]);
-  const reloaded = createStore(storage);
-  assert.deepStrictEqual(reloaded.getVideo("vid00000001").transcript, [
-    { start: 12, text: "hello" },
-  ]);
-});
-
 test("mergeVideos copies a transcript when the local video has none", () => {
   const store = createStore(fakeStorage());
   store.addTimestamp("vid00000001", 10);

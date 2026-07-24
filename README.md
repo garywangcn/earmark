@@ -13,7 +13,8 @@ each bookmark also shows the line being spoken at that moment.
 
 The extension fetches captions from your own browser/IP, which is why it
 works where server-side fetching doesn't (YouTube blocks datacenter IPs and
-CORS blocks web pages).
+CORS blocks web pages). Each mark shows everything spoken in its replay
+window — from (mark − rewind offset) to the mark itself.
 
 ## Optional: run as a website
 
@@ -24,7 +25,7 @@ python3 server.py    # serves extension/app at http://localhost:8787
 The same app works as a plain website (also deployable with the included
 `Dockerfile`, e.g. Cloud Run). With the extension installed, website pages on
 `localhost`, `127.0.0.1`, and `*.run.app` get automatic subtitles too;
-without it, use the **Transcript** paste-in button.
+without it, marks show plain times.
 
 Note: the extension app page and each website origin keep separate
 localStorage — use **Export**/**Import** to move your lists between them.
@@ -45,13 +46,8 @@ localStorage — use **Export**/**Import** to move your lists between them.
    duplicates — useful for backup or moving to another browser).
 
 Subtitle lines come from the video's captions (manual track preferred, else
-auto-generated), shown up to two lines — hover an entry to see the full line.
+auto-generated), shown up to two lines — hover an entry to see the full text.
 Videos without captions show plain times.
-
-**No extension?** Use the **Transcript** button — on YouTube open ⋯ →
-*Show transcript*, copy the text, and paste it in. The parsed lines are saved
-with the video (and included in Export), so subtitles work anywhere with one
-paste per video.
 
 Note: if you clicked inside the video itself, YouTube owns the keyboard for a
 moment and SPACE toggles play/pause; the app reclaims focus on the next

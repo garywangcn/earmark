@@ -1,7 +1,12 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert");
-const { parseYouTubeUrl, formatTime, findSnippet, parseTranscriptText } = require("../extension/app/helpers.js");
+const {
+  parseYouTubeUrl,
+  formatTime,
+  findSnippet,
+  findSnippetsInRange,
+} = require("../extension/app/helpers.js");
 
 test("parseYouTubeUrl accepts watch URLs", () => {
   assert.strictEqual(
@@ -82,33 +87,43 @@ test("findSnippet returns null before the first line or without a transcript", (
   assert.strictEqual(findSnippet([], 5), null);
 });
 
-test("parseTranscriptText parses YouTube's Show-transcript copy format", () => {
-  const text = "0:00\nAll right, so here we are\n0:05\nthe cool thing about these guys\n1:02\nreally long trunks";
-  assert.deepStrictEqual(parseTranscriptText(text), [
-    { start: 0, text: "All right, so here we are" },
-    { start: 5, text: "the cool thing about these guys" },
-    { start: 62, text: "really long trunks" },
-  ]);
+test("findSnippetsInRange returns every line spoken in the window", () => {
+  assert.deepStrictEqual(
+    findSnippetsInRange(snippets, 2.0, 8.5).map((s) => s.text),
+    ["here we are", "the cool thing", "long trunks"]
+  );
+  assert.deepStrictEqual(
+    findSnippetsInRange(snippets, 4.5, 8.5).map((s) => s.text),
+    ["the cool thing", "long trunks"]
+  );
 });
 
-test("parseTranscriptText handles hours and multi-line text", () => {
-  const text = "1:02:05\nfirst line\nsecond line of same snippet\n1:02:30\nnext";
-  assert.deepStrictEqual(parseTranscriptText(text), [
-    { start: 3725, text: "first line second line of same snippet" },
-    { start: 3750, text: "next" },
-  ]);
+test("findSnippetsInRange excludes lines that ended before the window", () => {
+  // "here we are" ends at 3.36; a window starting at 4.0 must not include it.
+  assert.deepStrictEqual(
+    findSnippetsInRange(snippets, 4.0, 6.0).map((s) => s.text),
+    ["the cool thing"]
+  );
 });
 
-test("parseTranscriptText skips headers, blank lines, and junk", () => {
-  const text = "Intro\n\n0:12\n  hello there  \n\nChapter Two\n0:20\nworld";
-  assert.deepStrictEqual(parseTranscriptText(text), [
-    { start: 12, text: "hello there Chapter Two" },
-    { start: 20, text: "world" },
-  ]);
+test("findSnippetsInRange treats zero-duration lines as lasting to the next line", () => {
+  const pasted = [
+    { start: 10, text: "first" },
+    { start: 20, text: "second" },
+  ];
+  assert.deepStrictEqual(
+    findSnippetsInRange(pasted, 15, 16).map((s) => s.text),
+    ["first"]
+  );
 });
 
-test("parseTranscriptText returns [] for unusable input", () => {
-  assert.deepStrictEqual(parseTranscriptText(""), []);
-  assert.deepStrictEqual(parseTranscriptText("no timestamps here\njust text"), []);
-  assert.deepStrictEqual(parseTranscriptText("0:12\n0:15\n"), []);
+test("findSnippetsInRange falls back to the last line before the window", () => {
+  const sparse = [{ start: 1, duration: 2, text: "early" }];
+  assert.deepStrictEqual(
+    findSnippetsInRange(sparse, 50, 55).map((s) => s.text),
+    ["early"]
+  );
+  assert.deepStrictEqual(findSnippetsInRange(sparse, 0, 0.5), []);
+  assert.deepStrictEqual(findSnippetsInRange(null, 0, 5), []);
 });
+

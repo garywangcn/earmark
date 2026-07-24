@@ -14,11 +14,6 @@ const els = {
   exportBtn: document.getElementById("export-btn"),
   importBtn: document.getElementById("import-btn"),
   importFile: document.getElementById("import-file"),
-  pasteBtn: document.getElementById("paste-btn"),
-  pastePanel: document.getElementById("paste-panel"),
-  pasteText: document.getElementById("paste-text"),
-  pasteSave: document.getElementById("paste-save"),
-  pasteCancel: document.getElementById("paste-cancel"),
 };
 
 let currentVideoId = store.state.lastVideoId;
@@ -45,11 +40,6 @@ const player = createPlayerController(els.playerFrame, {
     showError(`This video can't be played here (removed, private, or embedding disabled — error ${code}).`);
   },
 });
-
-// Marks are usually pressed shortly AFTER the interesting sentence ends, so
-// match subtitles against a slightly earlier time to show the sentence the
-// user actually reacted to rather than the one that just started.
-const REACTION_LAG = 1.0;
 
 els.offsetInput.value = store.state.settings.rewindSeconds;
 
@@ -85,13 +75,16 @@ function renderTimestamps(videoId, video) {
     time.className = "time";
     time.textContent = formatTime(t);
     jump.appendChild(time);
-    const snippet = findSnippet(snippetsFor(videoId), t - REACTION_LAG);
-    if (snippet) {
+    // Show everything spoken in the replay window: (mark − rewind offset) → mark.
+    const from = Math.max(0, t - store.state.settings.rewindSeconds);
+    const matched = findSnippetsInRange(snippetsFor(videoId), from, t);
+    if (matched.length > 0) {
+      const joined = matched.map((s) => s.text).join(" ").replace(/\s+/g, " ");
       const text = document.createElement("span");
       text.className = "snippet";
-      text.textContent = snippet.text.replace(/\s+/g, " ");
+      text.textContent = joined;
       jump.appendChild(text);
-      jump.title = snippet.text;
+      jump.title = joined;
     }
     jump.addEventListener("click", () => {
       // A click that ends a text selection shouldn't seek.
@@ -251,6 +244,7 @@ els.offsetInput.addEventListener("change", () => {
   els.offsetInput.value = n;
   store.setRewindSeconds(n);
   els.offsetInput.blur();
+  renderList(); // displayed subtitle ranges depend on the offset
 });
 
 els.exportBtn.addEventListener("click", () => {
@@ -294,34 +288,6 @@ els.importFile.addEventListener("change", () => {
   if (!file) return;
   file.text().then(importData);
   els.importFile.value = "";
-});
-
-els.pasteBtn.addEventListener("click", () => {
-  if (!currentVideoId) {
-    showError("Load a video first, then paste its transcript.");
-    return;
-  }
-  showError("");
-  els.pastePanel.hidden = !els.pastePanel.hidden;
-  if (!els.pastePanel.hidden) els.pasteText.focus();
-});
-
-els.pasteCancel.addEventListener("click", () => {
-  els.pastePanel.hidden = true;
-  els.pasteText.value = "";
-});
-
-els.pasteSave.addEventListener("click", () => {
-  const snippets = parseTranscriptText(els.pasteText.value);
-  if (snippets.length === 0) {
-    showError('No "0:12"-style lines found — copy the text from YouTube\'s Show transcript panel.');
-    return;
-  }
-  store.setTranscript(currentVideoId, snippets);
-  els.pastePanel.hidden = true;
-  els.pasteText.value = "";
-  showError("");
-  renderList();
 });
 
 if (currentVideoId) player.cue(currentVideoId);

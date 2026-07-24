@@ -114,10 +114,13 @@ Single key `listenpractice:v1`:
   tracking); the same controller is used on the website. The app page talks to
   the background worker via `chrome.runtime.sendMessage`; websites go through
   the content-script bridge.
-- Each timestamp renders as time + the snippet whose `start` is closest
-  at-or-before the mark minus a 1s reaction lag (`findSnippet` in
-  `helpers.js`; the lag makes a mark pressed just after a sentence ends show
-  that sentence, not the next one). No transcript → plain times.
+- Each timestamp renders as time + all lines spoken in its replay window,
+  (mark − rewind offset) → mark (`findSnippetsInRange` in `helpers.js`;
+  falls back to the last line before the mark when the window is silent).
+  Changing the offset re-renders the list. No transcript → plain times.
+- The paste-in Transcript button was removed on 2026-07-23 (auto-fetch via the
+  extension covers it); stored `video.transcript` data is still read and
+  merged for backward compatibility.
 
 ## Files
 

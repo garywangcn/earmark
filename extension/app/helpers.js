@@ -45,30 +45,31 @@ function findSnippet(snippets, seconds) {
   return found;
 }
 
-// Parses text copied from YouTube's "Show transcript" panel: a timestamp line
-// ("0:12" or "1:02:05") followed by one or more text lines. Lines before the
-// first timestamp are ignored; snippets that end up with no text are dropped.
-function parseTranscriptText(text) {
-  const timePattern = /^(\d+):(\d{2})(?::(\d{2}))?$/;
-  const snippets = [];
-  for (const raw of String(text).split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line) continue;
-    const m = line.match(timePattern);
-    if (m) {
-      const hasHours = m[3] !== undefined;
-      const start = hasHours
-        ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3])
-        : Number(m[1]) * 60 + Number(m[2]);
-      snippets.push({ start, text: "" });
-    } else if (snippets.length > 0) {
-      const current = snippets[snippets.length - 1];
-      current.text += (current.text ? " " : "") + line;
-    }
+// All snippets whose spoken interval overlaps [from, to]. A snippet with no
+// duration (pasted transcripts) lasts until the next snippet starts. Falls
+// back to the last line at-or-before `to` when nothing overlaps, so marks in
+// silence still show what was just said.
+function findSnippetsInRange(snippets, from, to) {
+  if (!Array.isArray(snippets) || snippets.length === 0) return [];
+  const result = [];
+  for (let i = 0; i < snippets.length; i++) {
+    const s = snippets[i];
+    if (s.start > to) break;
+    const end =
+      s.duration > 0
+        ? s.start + s.duration
+        : i + 1 < snippets.length
+          ? snippets[i + 1].start
+          : Infinity;
+    if (end > from) result.push(s);
   }
-  return snippets.filter((s) => s.text);
+  if (result.length === 0) {
+    const last = findSnippet(snippets, to);
+    if (last) result.push(last);
+  }
+  return result;
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { parseYouTubeUrl, formatTime, findSnippet, parseTranscriptText };
+  module.exports = { parseYouTubeUrl, formatTime, findSnippet, findSnippetsInRange };
 }

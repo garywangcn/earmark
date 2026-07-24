@@ -129,8 +129,12 @@ Single key `listenpractice:v1`:
   `zh-Hans`, "" = off; Translate dropdown in the controls row). The background
   worker additionally fetches the caption track with `&tlang=<code>` —
   YouTube translates server-side — and each mark shows the translated lines
-  for its replay window beneath the original. Best-effort: original always
-  renders even if the translation fetch fails. Google-Translate-style page
+  for its replay window beneath the original. The original and translated
+  tracks are fetched back-to-back from the same timedtext endpoint and the
+  second is frequently 429-throttled, so the worker spaces them (500ms) and
+  retries with backoff (`fetchTimedText`); a wanted-but-missing translation is
+  not cached, so it retries next time. Best-effort: original always renders
+  even if the translation fetch fails. Google-Translate-style page
   extensions can't help here because Chrome bars extensions from other
   extensions' pages.
 - `settings.showTranslation` (default `false`) gates whether translated lines

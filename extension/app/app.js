@@ -236,7 +236,8 @@ function fetchTranscript(videoId) {
     clearTimeout(timer);
     receiveSnippets(videoId, msg.snippets, msg.translated);
   };
-  const timer = setTimeout(() => window.removeEventListener("message", onMessage), 10000);
+  // Generous timeout: the worker may retry rate-limited transcript fetches.
+  const timer = setTimeout(() => window.removeEventListener("message", onMessage), 20000);
   window.addEventListener("message", onMessage);
   window.postMessage({ type: "earmark-transcript-request", videoId, tlang }, window.location.origin);
 }

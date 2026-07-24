@@ -117,6 +117,28 @@ function decodeEntities(s) {
     .trim();
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Fetch timedtext XML, retrying on rate-limit (429) or an empty/blocked body.
+// The original and translated tracks are fetched back-to-back from the same
+// endpoint, and the second request is frequently throttled with a 429 "Sorry"
+// page — retrying with backoff recovers it.
+async function fetchTimedText(url, tries = 3) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(url);
+      if (r.status === 200) {
+        const body = await r.text();
+        if (body.includes("<p ")) return body;
+      }
+    } catch {
+      // network hiccup — fall through to backoff and retry
+    }
+    await sleep(700 * (i + 1));
+  }
+  return null;
+}
+
 // <p t="1200" d="2160">text</p> (srv3); auto-captions nest <s> word tags,
 // which decodeEntities strips.
 function parseTimedTextXml(xml) {
@@ -150,24 +172,26 @@ async function fetchTranscript(videoId, tlang) {
   const track = pickCaptionTrack(tracks);
   if (!track) return null;
   if (track.baseUrl.includes("&exp=xpe")) return null; // PO token required
-  const xml = await (await fetch(track.baseUrl)).text();
+  const xml = await fetchTimedText(track.baseUrl);
+  if (!xml) return null;
   const snippets = parseTimedTextXml(xml);
   if (snippets.length === 0) return null;
 
   // YouTube can translate any translatable track server-side via &tlang=.
   let translated = null;
-  if (tlang && track.isTranslatable !== false) {
-    try {
-      const txml = await (await fetch(`${track.baseUrl}&tlang=${encodeURIComponent(tlang)}`)).text();
+  const wantTranslation = tlang && track.isTranslatable !== false;
+  if (wantTranslation) {
+    await sleep(500); // space from the original fetch to dodge rate-limiting
+    const txml = await fetchTimedText(`${track.baseUrl}&tlang=${encodeURIComponent(tlang)}`);
+    if (txml) {
       const tsnips = parseTimedTextXml(txml);
       if (tsnips.length > 0) translated = tsnips;
-    } catch {
-      // translation is best-effort; original snippets still get returned
     }
   }
 
   const payload = { snippets, translated };
-  cache[cacheKey] = payload;
+  // Don't cache a wanted-but-missing translation, so it can be retried later.
+  if (!(wantTranslation && !translated)) cache[cacheKey] = payload;
   return payload;
 }
 

@@ -195,12 +195,23 @@ async function fetchTranscript(videoId, tlang) {
   return payload;
 }
 
+// Serialize transcript fetches. The app requests every video on load, and
+// firing that many request chains at YouTube in parallel triggers 429
+// rate-limiting that silently drops the translation. A one-at-a-time queue
+// (each chain also spaced/retried internally) keeps requests gentle.
+let fetchQueue = Promise.resolve();
+function queueTranscript(videoId, tlang) {
+  const run = fetchQueue.then(() => fetchTranscript(videoId, tlang));
+  fetchQueue = run.catch(() => {}); // a failure must not stall the queue
+  return run;
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (!msg || !/^[A-Za-z0-9_-]{11}$/.test(msg.videoId || "")) {
     sendResponse({ snippets: null, translated: null });
     return false;
   }
-  fetchTranscript(msg.videoId, typeof msg.tlang === "string" ? msg.tlang : "")
+  queueTranscript(msg.videoId, typeof msg.tlang === "string" ? msg.tlang : "")
     .then((payload) => sendResponse(payload || { snippets: null, translated: null }))
     .catch(() => sendResponse({ snippets: null, translated: null }));
   return true; // keep the message channel open for the async response

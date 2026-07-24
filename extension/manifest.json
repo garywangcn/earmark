@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "EarMark Transcripts",
+  "version": "1.0.0",
+  "description": "Fetches YouTube transcripts for the EarMark listening-practice app.",
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost/*", "http://127.0.0.1/*", "https://*.run.app/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "host_permissions": ["https://www.youtube.com/*"]
+}

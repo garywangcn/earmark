@@ -92,19 +92,23 @@ Single key `listenpractice:v1`:
 - Saving is write-through: every mutation persists immediately.
 - Corrupt/missing JSON → start with defaults.
 
-## Transcript display (added 2026-07-14)
+## Transcript display (added 2026-07-14; extension-based since 2026-07-23)
 
-- `server.py` (Python stdlib + `youtube-transcript-api`) replaces the plain
-  static server: it serves the site and `GET /transcript?v=VIDEO_ID`, returning
-  `{available, language, generated, snippets: [{start, duration, text}]}` or
-  `{available: false, reason}`. Manual caption tracks are preferred over
-  auto-generated; results are cached in memory per video.
-- The page fetches the transcript on video load (and on startup for the
-  restored video), keeps it in memory only, and renders each timestamp as
-  time + the snippet whose `start` is closest at-or-before the mark minus a
-  1s reaction lag (`findSnippet` in `helpers.js`; the lag makes a mark pressed
-  just after a sentence ends show that sentence, not the next one). No
-  transcript → plain times; the site still works under a dumb static server.
+- Transcripts are fetched by the `extension/` Chrome extension (MV3), because
+  web pages can't read YouTube caption endpoints (CORS) and datacenter IPs are
+  blocked by YouTube. Flow: the page `postMessage`s
+  `earmark-transcript-request` → content script (localhost/127.0.0.1/*.run.app,
+  `document_start`) → background worker fetches the watch page, extracts
+  `INNERTUBE_API_KEY`, calls InnerTube `player` with the ANDROID 20.10.38
+  client (no proof-of-origin token needed), fetches the track's timedtext XML
+  (`<p t d>`), and replies with `{start, duration, text}` snippets (manual
+  track preferred over ASR; cached per video). The page times out silently
+  after 10s when the extension isn't installed.
+- `server.py` is a plain static file server (stdlib only, no dependencies).
+- Each timestamp renders as time + the snippet whose `start` is closest
+  at-or-before the mark minus a 1s reaction lag (`findSnippet` in
+  `helpers.js`; the lag makes a mark pressed just after a sentence ends show
+  that sentence, not the next one). No transcript → plain times.
 
 ## Files
 

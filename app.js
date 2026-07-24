@@ -152,17 +152,27 @@ function snippetsFor(videoId) {
   return (video && video.transcript) || transcripts[videoId] || null;
 }
 
+// Transcripts come from the EarMark Transcripts browser extension (extension/
+// in the repo): the page posts a request, the extension's content script
+// relays it to a background worker that can fetch YouTube captions without
+// CORS restrictions. Times out silently when the extension isn't installed —
+// pasted transcripts (Transcript button) are the fallback.
 function fetchTranscript(videoId) {
   if (snippetsFor(videoId)) return;
-  fetch(`/transcript?v=${videoId}`)
-    .then((r) => (r.ok ? r.json() : null))
-    .then((data) => {
-      if (data && data.available) {
-        transcripts[videoId] = data.snippets;
-        renderList();
-      }
-    })
-    .catch(() => {});
+  const onMessage = (event) => {
+    const msg = event.data;
+    if (event.source !== window || !msg) return;
+    if (msg.type !== "earmark-transcript-response" || msg.videoId !== videoId) return;
+    window.removeEventListener("message", onMessage);
+    clearTimeout(timer);
+    if (Array.isArray(msg.snippets) && msg.snippets.length > 0 && !snippetsFor(videoId)) {
+      transcripts[videoId] = msg.snippets;
+      renderList();
+    }
+  };
+  const timer = setTimeout(() => window.removeEventListener("message", onMessage), 10000);
+  window.addEventListener("message", onMessage);
+  window.postMessage({ type: "earmark-transcript-request", videoId }, window.location.origin);
 }
 
 function loadVideo(videoId) {

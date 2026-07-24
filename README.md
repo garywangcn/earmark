@@ -7,13 +7,25 @@ each bookmark also shows the line being spoken at that moment.
 ## Run
 
 ```sh
-pip install youtube-transcript-api   # once; needed for subtitle lines
-python3 server.py                    # http://localhost:8787 (or: python3 server.py 9000)
+python3 server.py    # http://localhost:8787 (or: python3 server.py 9000)
 ```
 
-`server.py` serves the site and a `/transcript?v=VIDEO_ID` endpoint. If you
-don't care about subtitles, `python3 -m http.server 8787` still works — the
-app just shows plain times.
+No dependencies — `server.py` just serves the static files (any static file
+server works; the YouTube player API needs http(s), not `file://`).
+
+## Subtitles: install the browser extension (once)
+
+Subtitle lines are fetched by a small Chrome extension, because web pages
+can't read YouTube's caption endpoints (CORS) and datacenter IPs (Cloud Run
+etc.) are blocked by YouTube:
+
+1. Open `chrome://extensions`, enable **Developer mode** (top right).
+2. Click **Load unpacked** and choose this repo's `extension/` folder.
+
+That's it — the extension activates on `localhost`, `127.0.0.1`, and
+`*.run.app` pages, fetches captions from your browser (your own IP), and hands
+them to the app. Without the extension, use the **Transcript** paste-in button
+instead; both fall back to plain times.
 
 ## Use
 
@@ -34,11 +46,10 @@ Subtitle lines come from the video's captions (manual track preferred, else
 auto-generated), shown up to two lines — hover an entry to see the full line.
 Videos without captions show plain times.
 
-**No transcript server?** (e.g. the site deployed to Cloud Run, where YouTube
-blocks transcript fetches from datacenter IPs): use the **Transcript** button —
-on YouTube open ⋯ → *Show transcript*, copy the text, and paste it in. The
-parsed lines are saved with the video (and included in Export), so subtitles
-work on any deployment with one paste per video.
+**No extension?** Use the **Transcript** button — on YouTube open ⋯ →
+*Show transcript*, copy the text, and paste it in. The parsed lines are saved
+with the video (and included in Export), so subtitles work anywhere with one
+paste per video.
 
 Note: if you clicked inside the video itself, YouTube owns the keyboard for a
 moment and SPACE toggles play/pause; the app reclaims focus on the next

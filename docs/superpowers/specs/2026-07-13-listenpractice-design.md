@@ -134,6 +134,12 @@ Single key `listenpractice:v1`:
   `hide-translation` class on `#video-groups` (instant, no re-render), so the
   original is shown first for self-testing and the translation revealed on
   demand. Disabled when Translate is Off.
+- **Open-in-EarMark (added 2026-07-24):** the toolbar action reads the active
+  tab's URL (`parseYouTubeUrl`, shared with the worker via `importScripts`) and
+  opens `app/index.html?v=<id>`; a `contextMenus` item ("Open in EarMark", page
+  and link contexts on YouTube) does the same from a right-click. The app page
+  reads `?v=` on startup, `loadVideo`s it, and strips the query with
+  `history.replaceState` so a refresh falls back to `lastVideoId`.
 
 ## Files
 

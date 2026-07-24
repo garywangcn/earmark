@@ -4,11 +4,34 @@
 // watch page -> INNERTUBE_API_KEY -> InnerTube player (ANDROID client, which
 // doesn't require a proof-of-origin token) -> timedtext XML.
 
+importScripts("app/helpers.js"); // parseYouTubeUrl
+
 const cache = {}; // "videoId|tlang" -> { snippets, translated }
 
-// Toolbar icon opens the app.
-chrome.action.onClicked.addListener(() => {
-  chrome.tabs.create({ url: chrome.runtime.getURL("app/index.html") });
+// Open the app, loading `videoId` if given (via ?v= on the app URL).
+function openInEarMark(videoId) {
+  const base = chrome.runtime.getURL("app/index.html");
+  chrome.tabs.create({ url: videoId ? `${base}?v=${videoId}` : base });
+}
+
+// Toolbar icon: open EarMark, loading the current tab's YouTube video if any.
+chrome.action.onClicked.addListener((tab) => {
+  openInEarMark(tab && tab.url ? parseYouTubeUrl(tab.url) : null);
+});
+
+// Right-click a YouTube page or link -> "Open in EarMark".
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: "open-in-earmark",
+    title: "Open in EarMark",
+    contexts: ["page", "link"],
+    documentUrlPatterns: ["*://*.youtube.com/*", "*://youtu.be/*"],
+  });
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== "open-in-earmark") return;
+  openInEarMark(parseYouTubeUrl(info.linkUrl || (tab && tab.url) || ""));
 });
 
 // YouTube's embed player requires an identifying HTTP Referer, which

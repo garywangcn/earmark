@@ -340,7 +340,15 @@ els.importFile.addEventListener("change", () => {
   els.importFile.value = "";
 });
 
-if (currentVideoId) player.cue(currentVideoId);
+// Opened from the toolbar/context menu on a YouTube page: ?v=<id> loads that
+// video. Strip the query afterward so a refresh falls back to normal behavior.
+const requestedVideo = new URLSearchParams(location.search).get("v");
+if (requestedVideo && /^[A-Za-z0-9_-]{11}$/.test(requestedVideo)) {
+  history.replaceState(null, "", location.pathname);
+  loadVideo(requestedVideo);
+} else if (currentVideoId) {
+  player.cue(currentVideoId);
+}
 for (const [videoId, video] of Object.entries(store.state.videos)) {
   if (videoId === currentVideoId || video.timestamps.length > 0) fetchTranscript(videoId);
 }

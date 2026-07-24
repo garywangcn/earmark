@@ -11,6 +11,11 @@ each bookmark also shows the line being spoken at that moment.
 3. Click the **EarMark** toolbar icon — the full app opens in a tab, with
    automatic subtitles. No server, no dependencies.
 
+**One-click from a video:** while watching any YouTube video in Chrome, click
+the EarMark toolbar icon (or right-click the page/a video link → **Open in
+EarMark**) and that video opens directly in EarMark, ready to mark. Clicking
+the icon anywhere else just opens the app.
+
 The extension fetches captions from your own browser/IP, which is why it
 works where server-side fetching doesn't (YouTube blocks datacenter IPs and
 CORS blocks web pages). Each mark shows everything spoken in its replay

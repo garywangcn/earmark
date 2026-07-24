@@ -6,9 +6,6 @@
   "action": { "default_title": "Open EarMark" },
   "background": { "service_worker": "background.js" },
   "permissions": ["declarativeNetRequestWithHostAccess"],
-  "declarative_net_request": {
-    "rule_resources": [{ "id": "embed_referer", "enabled": true, "path": "rules.json" }]
-  },
   "content_scripts": [
     {
       "matches": ["http://localhost/*", "http://127.0.0.1/*", "https://*.run.app/*"],

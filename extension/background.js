@@ -11,6 +11,38 @@ chrome.action.onClicked.addListener(() => {
   chrome.tabs.create({ url: chrome.runtime.getURL("app/index.html") });
 });
 
+// YouTube's embed player requires an identifying HTTP Referer, which
+// chrome-extension:// pages don't send (embed errors 153/152). Inject one for
+// embeds loaded by our own pages.
+function installRefererRule() {
+  chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [1],
+    addRules: [
+      {
+        id: 1,
+        priority: 1,
+        condition: {
+          initiatorDomains: [chrome.runtime.id],
+          requestDomains: ["www.youtube.com", "www.youtube-nocookie.com"],
+          resourceTypes: ["sub_frame"],
+        },
+        action: {
+          type: "modifyHeaders",
+          requestHeaders: [
+            {
+              header: "referer",
+              operation: "set",
+              value: `https://${chrome.runtime.id}.chromiumapp.org/`,
+            },
+          ],
+        },
+      },
+    ],
+  });
+}
+chrome.runtime.onInstalled.addListener(installRefererRule);
+chrome.runtime.onStartup.addListener(installRefererRule);
+
 function decodeEntities(s) {
   return s
     .replace(/<[^>]+>/g, "")

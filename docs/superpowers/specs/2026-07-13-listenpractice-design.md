@@ -101,8 +101,12 @@ Single key `listenpractice:v1`:
   `document_start`) → background worker fetches the watch page, extracts
   `INNERTUBE_API_KEY`, calls InnerTube `player` with the ANDROID 20.10.38
   client (no proof-of-origin token needed), fetches the track's timedtext XML
-  (`<p t d>`), and replies with `{start, duration, text}` snippets (manual
-  track preferred over ASR; cached per video). The page times out silently
+  (`<p t d>`), and replies with `{start, duration, text}` snippets (cached per
+  video). Track choice is `pickCaptionTrack` (helpers.js): the ASR track's
+  language is the spoken language, so it prefers the manual track in that
+  language, else the ASR track, else the first manual track — this avoids
+  picking a wrong-language track on videos carrying many manual translations
+  (e.g. a French video listing Arabic captions first). The page times out silently
   after 10s when the extension isn't installed.
 - `server.py` is a plain static file server (stdlib only, no dependencies).
 - **All-in-one extension (2026-07-23):** the app itself lives in

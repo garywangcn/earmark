@@ -45,6 +45,23 @@ function findSnippet(snippets, seconds) {
   return found;
 }
 
+// Chooses the caption track matching the video's spoken language. The
+// auto-generated (ASR) track is speech-to-text of the audio, so its language
+// is the spoken one; prefer the manual track in that language, else the ASR
+// track. Without an ASR track (single-language manual video) use the first
+// manual track. Prevents picking a wrong-language track on videos that carry
+// many manual translations (e.g. a French video with Arabic listed first).
+function pickCaptionTrack(tracks) {
+  if (!Array.isArray(tracks) || tracks.length === 0) return null;
+  const base = (code) => String(code || "").split("-")[0].toLowerCase();
+  const asr = tracks.find((t) => t.kind === "asr");
+  if (asr) {
+    const spoken = base(asr.languageCode);
+    return tracks.find((t) => t.kind !== "asr" && base(t.languageCode) === spoken) || asr;
+  }
+  return tracks.find((t) => t.kind !== "asr") || tracks[0];
+}
+
 // Lines spoken in the replay window [from, to]: every snippet that STARTS
 // inside it. Only start times are trusted — caption durations (especially
 // auto-generated ones) often stretch across silence, which would wrongly pull
@@ -62,5 +79,5 @@ function findSnippetsInRange(snippets, from, to) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { parseYouTubeUrl, formatTime, findSnippet, findSnippetsInRange };
+  module.exports = { parseYouTubeUrl, formatTime, findSnippet, findSnippetsInRange, pickCaptionTrack };
 }

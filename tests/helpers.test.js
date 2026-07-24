@@ -6,7 +6,55 @@ const {
   formatTime,
   findSnippet,
   findSnippetsInRange,
+  pickCaptionTrack,
 } = require("../extension/app/helpers.js");
+
+test("pickCaptionTrack prefers the manual track in the spoken (ASR) language", () => {
+  // The reported "Easy French" video: many manual translations + a French ASR
+  // track. Spoken language is French (from the ASR), so pick French manual —
+  // not the first manual track (Arabic).
+  const tracks = [
+    { languageCode: "ar", kind: "manual" },
+    { languageCode: "zh", kind: "manual" },
+    { languageCode: "en", kind: "manual" },
+    { languageCode: "fr", kind: "manual" },
+    { languageCode: "fr", kind: "asr" },
+  ];
+  assert.deepStrictEqual(pickCaptionTrack(tracks), { languageCode: "fr", kind: "manual" });
+});
+
+test("pickCaptionTrack falls back to the ASR track when no manual matches it", () => {
+  const tracks = [
+    { languageCode: "en", kind: "manual" },
+    { languageCode: "fr", kind: "asr" },
+  ];
+  assert.deepStrictEqual(pickCaptionTrack(tracks), { languageCode: "fr", kind: "asr" });
+});
+
+test("pickCaptionTrack matches language ignoring region", () => {
+  const tracks = [
+    { languageCode: "en", kind: "manual" },
+    { languageCode: "fr-FR", kind: "manual" },
+    { languageCode: "fr", kind: "asr" },
+  ];
+  assert.deepStrictEqual(pickCaptionTrack(tracks), { languageCode: "fr-FR", kind: "manual" });
+});
+
+test("pickCaptionTrack uses the sole track when there is no ASR", () => {
+  assert.deepStrictEqual(
+    pickCaptionTrack([{ languageCode: "de", kind: "manual" }]),
+    { languageCode: "de", kind: "manual" }
+  );
+  assert.deepStrictEqual(
+    pickCaptionTrack([{ languageCode: "de", kind: "asr" }]),
+    { languageCode: "de", kind: "asr" }
+  );
+});
+
+test("pickCaptionTrack returns null for empty input", () => {
+  assert.strictEqual(pickCaptionTrack([]), null);
+  assert.strictEqual(pickCaptionTrack(null), null);
+});
 
 test("parseYouTubeUrl accepts watch URLs", () => {
   assert.strictEqual(

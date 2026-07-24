@@ -4,7 +4,7 @@
 // watch page -> INNERTUBE_API_KEY -> InnerTube player (ANDROID client, which
 // doesn't require a proof-of-origin token) -> timedtext XML.
 
-importScripts("app/helpers.js"); // parseYouTubeUrl
+importScripts("app/helpers.js"); // parseYouTubeUrl, pickCaptionTrack
 
 const cache = {}; // "videoId|tlang" -> { snippets, translated }
 
@@ -147,8 +147,8 @@ async function fetchTranscript(videoId, tlang) {
     })
   ).json();
   const tracks = player?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-  if (!tracks || tracks.length === 0) return null;
-  const track = tracks.find((t) => t.kind !== "asr") || tracks[0];
+  const track = pickCaptionTrack(tracks);
+  if (!track) return null;
   if (track.baseUrl.includes("&exp=xpe")) return null; // PO token required
   const xml = await (await fetch(track.baseUrl)).text();
   const snippets = parseTimedTextXml(xml);

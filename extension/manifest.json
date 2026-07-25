@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "EarMark Transcripts",
+  "name": "EarMark — YouTube Listening Practice",
   "version": "1.0.0",
-  "description": "EarMark listening practice: mark moments in YouTube videos with SPACE and replay them with subtitles.",
+  "description": "Mark moments in YouTube videos with the Space key and replay them with subtitles and translations for listening practice.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",

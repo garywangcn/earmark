@@ -7,6 +7,7 @@ const {
   findSnippet,
   findSnippetsInRange,
   pickCaptionTrack,
+  spokenLanguage,
 } = require("../extension/app/helpers.js");
 
 test("pickCaptionTrack prefers the manual track in the spoken (ASR) language", () => {
@@ -49,6 +50,31 @@ test("pickCaptionTrack uses the sole track when there is no ASR", () => {
     pickCaptionTrack([{ languageCode: "de", kind: "asr" }]),
     { languageCode: "de", kind: "asr" }
   );
+});
+
+test("pickCaptionTrack uses the spoken language over the first ASR track (AI-dubbed video)", () => {
+  // The reported video P1zBiAQU1IA: English original with AI-dubbed audio,
+  // so an ASR track per dub language, Arabic listed first.
+  const tracks = [
+    { languageCode: "ar", kind: "asr" },
+    { languageCode: "bn", kind: "asr" },
+    { languageCode: "en" },
+    { languageCode: "en", kind: "asr" },
+    { languageCode: "fr-FR", kind: "asr" },
+  ];
+  assert.deepStrictEqual(pickCaptionTrack(tracks, "en"), { languageCode: "en" });
+  assert.deepStrictEqual(
+    pickCaptionTrack(tracks.filter((t) => t.kind === "asr"), "en"),
+    { languageCode: "en", kind: "asr" }
+  );
+});
+
+test("spokenLanguage reads the default audio track's language", () => {
+  const audioTracks = [{ audioTrackId: "ar.10" }, { audioTrackId: "en-US.4" }];
+  assert.strictEqual(spokenLanguage({ audioTracks, defaultAudioTrackIndex: 1 }), "en");
+  assert.strictEqual(spokenLanguage({ audioTracks: [{}], defaultAudioTrackIndex: 0 }), null);
+  assert.strictEqual(spokenLanguage({}), null);
+  assert.strictEqual(spokenLanguage(undefined), null);
 });
 
 test("pickCaptionTrack returns null for empty input", () => {

@@ -22,6 +22,10 @@ let currentVideoId = store.state.lastVideoId;
 const transcripts = {}; // videoId -> snippets, fetched via the extension
 const translations = {}; // videoId -> translated snippets (per settings.translateTo)
 
+// The most recently marked timestamp, highlighted in the sidebar so it's easy
+// to spot after pressing SPACE. Not persisted — just a "you are here" cue.
+let latestMark = null; // { videoId, seconds }
+
 // True when running as the extension's own app page (chrome-extension://…),
 // where the background worker is reachable directly.
 const IS_EXTENSION_PAGE =
@@ -76,6 +80,8 @@ function jumpTo(videoId, t) {
     if (!player.hasVideo) return;
     player.seekTo(target);
     player.play();
+    latestMark = { videoId, seconds: t };
+    renderList();
   } else {
     currentVideoId = videoId;
     store.setLastVideo(videoId);
@@ -83,6 +89,7 @@ function jumpTo(videoId, t) {
     showVideoUrl(videoId);
     fetchTranscript(videoId, { translate: true });
     player.load(videoId, target);
+    latestMark = { videoId, seconds: t };
     renderList();
   }
 }
@@ -92,6 +99,8 @@ function renderTimestamps(videoId, video) {
   ul.className = "timestamps";
   for (const t of video.timestamps) {
     const li = document.createElement("li");
+    const isLatest = !!latestMark && latestMark.videoId === videoId && latestMark.seconds === t;
+    if (isLatest) li.className = "latest";
     const jump = document.createElement("button");
     jump.className = "jump";
     const time = document.createElement("span");
@@ -131,6 +140,7 @@ function renderTimestamps(videoId, video) {
     del.title = "Delete this timestamp";
     del.addEventListener("click", () => {
       store.deleteTimestamp(videoId, t);
+      if (isLatest) latestMark = null;
       renderList();
     });
     li.append(jump, del);
@@ -179,6 +189,8 @@ function renderList() {
     if (!video.folded) section.appendChild(renderTimestamps(videoId, video));
     els.groups.appendChild(section);
   }
+  const latestEl = els.groups.querySelector("li.latest");
+  if (latestEl) latestEl.scrollIntoView({ block: "nearest" });
 }
 
 function fetchTitle(videoId) {
@@ -218,9 +230,8 @@ function receiveSnippets(videoId, snippets, translated) {
 }
 
 // `translate` requests the translated track too. YouTube rate-limits heavily,
-// so only the currently-watched video asks for a translation; other videos
-// fetch the plain original for the sidebar. That keeps request volume near
-// what worked before translation existed.
+// so this only ever runs for the currently-watched video — other sidebar
+// entries simply show no snippet preview until they become current.
 function fetchTranscript(videoId, { translate = false } = {}) {
   const tlang = translate ? store.state.settings.translateTo : "";
   const wantTranslation = !!tlang && !translations[videoId];
@@ -259,7 +270,11 @@ function loadVideo(videoId) {
 
 function mark() {
   if (!player.hasVideo || !currentVideoId) return;
-  if (store.addTimestamp(currentVideoId, player.currentTime)) renderList();
+  const seconds = player.currentTime;
+  if (store.addTimestamp(currentVideoId, seconds)) {
+    latestMark = { videoId: currentVideoId, seconds };
+    renderList();
+  }
 }
 
 els.form.addEventListener("submit", (e) => {
@@ -345,9 +360,6 @@ function importData(text) {
   }
   store.mergeVideos(data.videos);
   showError("");
-  for (const [videoId, video] of Object.entries(store.state.videos)) {
-    if (video.timestamps.length > 0) fetchTranscript(videoId);
-  }
   renderList();
 }
 
@@ -369,10 +381,5 @@ if (requestedVideo && /^[A-Za-z0-9_-]{11}$/.test(requestedVideo)) {
   showVideoUrl(currentVideoId);
   player.cue(currentVideoId);
   fetchTranscript(currentVideoId, { translate: true });
-}
-// Plain originals for the other marked videos (no translation) so the sidebar
-// shows their subtitle text without flooding YouTube with translation requests.
-for (const [videoId, video] of Object.entries(store.state.videos)) {
-  if (videoId !== currentVideoId && video.timestamps.length > 0) fetchTranscript(videoId);
 }
 renderList();

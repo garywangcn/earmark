@@ -46,6 +46,8 @@ body {
 
 .timestamps { list-style: none; margin: 4px 0 0; padding: 0 0 0 12px; }
 .timestamps li { display: flex; align-items: flex-start; }
+.timestamps li.latest .jump { background: #fff3cd; }
+.timestamps li.latest .jump:hover { background: #ffe69c; }
 
 .jump {
   flex: 1;
